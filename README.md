@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/anthropics/claude-code/main/.github/logo.png" width="72" alt="logo" onerror="this.style.display='none'"/>
+<h1>🛰️ Funding&nbsp;→&nbsp;Outreach</h1>
 
-<h1>🛰️ Daily Startup Scout</h1>
+<p><strong>From a startup's funding news to a proof-of-work outreach plan — automatically, every day.</strong></p>
 
 <p><em>An autonomous daily agent that finds freshly-funded startups, scores fit, designs proof-of-work projects, and emails you a ranked report.</em></p>
 
