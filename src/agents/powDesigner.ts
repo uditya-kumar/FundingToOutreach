@@ -15,7 +15,13 @@ Research the startup briefly if needed, then produce:
 - whyItMatters: business impact (revenue, cost, CX, or founder/team time saved).
 - difficulty: 0-10.
 - responseProbability: "Low"|"Medium"|"High", and responseProbabilityScore 0-10.
-- outreachMessage: short, specific cold message per task.md's outreach template, personalized to this startup and build.
+- outreachMessage: a short cold message personalized to THIS startup and build, in this shape:
+  Subject: Built a quick idea for [Startup] around [problem]
+  Hi [Founder], Saw [Startup] recently raised [funding/stage]. I noticed a possible opportunity around [specific problem].
+  I'm a final-year CSE student and full-stack/AI engineer (Teacher Insights: 2,486+ users, 11k+ monthly views; plus MCP/AI-agent tools and React Native apps).
+  I'm building a quick proof-of-work for [specific idea] because I think it could help [business outcome].
+  Would you be open to a 15-minute call this week?
+  Best, Uditya — GitHub: github.com/uditya-kumar — LinkedIn: linkedin.com/in/udityakumar
 
 Be concrete. No generic advice.${jsonOnly(SCHEMA_TEXT.proofOfWork)}`,
 };

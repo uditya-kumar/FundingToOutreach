@@ -6,7 +6,7 @@ export const reportWriter: StageConfig = {
   maxTurns: 5,
   system: `You render the final daily startup-scout email from ranked JSON (startups, proof-of-work plans, today's date) given in the prompt.
 
-Produce EXACTLY task.md's format:
+Produce EXACTLY this structure:
 - Subject: "Daily Startup Targets — [Date]"
 - Greeting to Uditya.
 - "## Top Opportunity Today" (#1: name, what they do, funding+stage+date, why best fit, founder + LinkedIn, hiring page, score).

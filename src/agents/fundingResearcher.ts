@@ -9,7 +9,9 @@ import {
 
 // 1. Discovery + sector filter (task.md Steps 1+2). Returns CandidateList.
 export const fundingResearcher: StageConfig = {
-  allowedTools: [T.recentFunding, "WebFetch", T.exa],
+  // Discovery works on headlines + search snippets only — no page-reading here
+  // (that's fit-strategist's job). recentFunding = RSS sweep, exa = feed-less sources.
+  allowedTools: [T.recentFunding, T.exa],
   maxTurns: 25,
   system: `You discover recently-funded startups for a proof-of-work job hunt.
 
