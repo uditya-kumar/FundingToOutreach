@@ -1,0 +1,18 @@
+{
+  "name": "dailyreportagent",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "src/agent.ts",
+  "scripts": {
+    "start": "npx tsx src/agent.ts",
+    "view": "node log-viewer.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.31.0",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.183",
+    "@types/node": "^26.0.0"
+  }
+}

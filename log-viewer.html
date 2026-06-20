@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Daily Scout — Log Viewer</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d; --text: #c9d1d9;
+    --muted: #8b949e; --info: #58a6ff; --warn: #d29922; --error: #f85149;
+    --data: #bc8cff; --scope: #3fb950;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 13px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  header {
+    position: sticky; top: 0; background: var(--panel);
+    border-bottom: 1px solid var(--border); padding: 10px 16px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+  .file { color: var(--muted); }
+  .spacer { flex: 1; }
+  label { color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .filters button {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 5px; padding: 3px 9px; cursor: pointer; font: inherit;
+  }
+  .filters button.off { opacity: 0.35; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  #count { color: var(--muted); }
+  main { padding: 8px 16px 40px; }
+  .row { display: flex; gap: 10px; padding: 2px 0; white-space: pre-wrap; word-break: break-word; border-bottom: 1px solid #21262d33; }
+  .row .ts { color: var(--muted); flex-shrink: 0; }
+  .row .lvl { flex-shrink: 0; width: 46px; font-weight: 600; }
+  .row .scope { color: var(--scope); flex-shrink: 0; }
+  .row .msg { flex: 1; }
+  .INFO .lvl { color: var(--info); }
+  .WARN .lvl { color: var(--warn); }
+  .ERROR { background: #f8514915; }
+  .ERROR .lvl { color: var(--error); }
+  .DATA .lvl { color: var(--data); }
+  .json { color: var(--data); background: #bc8cff0d; border-left: 2px solid var(--data); padding: 4px 10px; margin: 2px 0; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛰️ Daily Scout Log</h1>
+  <span class="file" id="file">…</span>
+  <span class="spacer"></span>
+  <span class="filters" id="filters">
+    <button data-lvl="INFO"><span class="dot" style="background:var(--info)"></span> INFO</button>
+    <button data-lvl="WARN"><span class="dot" style="background:var(--warn)"></span> WARN</button>
+    <button data-lvl="ERROR"><span class="dot" style="background:var(--error)"></span> ERROR</button>
+    <button data-lvl="DATA"><span class="dot" style="background:var(--data)"></span> DATA</button>
+  </span>
+  <label><input type="checkbox" id="follow" checked /> auto-scroll</label>
+  <span id="count"></span>
+</header>
+<main id="log"></main>
+
+<script>
+const off = new Set();           // hidden levels
+const logEl = document.getElementById("log");
+const fileEl = document.getElementById("file");
+const countEl = document.getElementById("count");
+const followEl = document.getElementById("follow");
+
+// Level filter buttons
+document.getElementById("filters").addEventListener("click", (e) => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  const lvl = btn.dataset.lvl;
+  if (off.has(lvl)) { off.delete(lvl); btn.classList.remove("off"); }
+  else { off.add(lvl); btn.classList.add("off"); }
+  applyFilter();
+});
+function applyFilter() {
+  for (const row of logEl.children) {
+    const lvl = row.dataset.lvl;
+    row.classList.toggle("hidden", lvl && off.has(lvl));
+  }
+}
+
+// Parse one raw log line into structured parts.
+// Format: "2026-... LEVEL [scope] message"
+const LINE = /^(\S+)\s+(INFO|WARN|ERROR|DATA)\s+\[([^\]]+)\]\s?(.*)$/;
+function render(text) {
+  logEl.innerHTML = "";
+  const lines = text.split("\n");
+  let cur = null; // current DATA block accumulating JSON
+  for (const line of lines) {
+    const m = line.match(LINE);
+    if (m) {
+      cur = null;
+      const [, ts, lvl, scope, msg] = m;
+      const row = document.createElement("div");
+      row.className = "row " + lvl;
+      row.dataset.lvl = lvl;
+      row.innerHTML =
+        `<span class="ts">${ts.replace("T", " ").replace("Z", "")}</span>` +
+        `<span class="lvl">${lvl}</span>` +
+        `<span class="scope">${scope}</span>` +
+        `<span class="msg"></span>`;
+      row.querySelector(".msg").textContent = msg;
+      logEl.appendChild(row);
+      if (lvl === "DATA") cur = row; // following indented lines are its JSON
+    } else if (cur && line.length) {
+      // continuation line of a DATA block (the pretty JSON)
+      let pre = cur.querySelector(".json");
+      if (!pre) { pre = document.createElement("div"); pre.className = "json"; cur.after(pre); cur._json = pre; }
+      else pre = cur._json;
+      pre.textContent += (pre.textContent ? "\n" : "") + line;
+    }
+  }
+  applyFilter();
+  countEl.textContent = logEl.querySelectorAll(".row").length + " lines";
+  if (followEl.checked) window.scrollTo(0, document.body.scrollHeight);
+}
+
+async function poll() {
+  try {
+    const res = await fetch("/log");
+    fileEl.textContent = res.headers.get("x-log-name") || "";
+    render(await res.text());
+  } catch { fileEl.textContent = "(server not reachable)"; }
+}
+poll();
+setInterval(poll, 1500); // live refresh
+</script>
+</body>
+</html>
