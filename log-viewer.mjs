@@ -2,12 +2,25 @@
 //   node log-viewer.mjs   →   http://localhost:4500
 // Serves log-viewer.html and the NEWEST logs/*.log file (the page polls /log).
 import { createServer } from "node:http";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const PORT = 4500;
 const LOGS_DIR = new URL("./logs/", import.meta.url);
 const HTML = fileURLToPath(new URL("./log-viewer.html", import.meta.url));
+
+async function clearLogs() {
+  let files;
+  try {
+    files = (await readdir(LOGS_DIR)).filter((f) => f.endsWith(".log"));
+  } catch {
+    return 0;
+  }
+  await Promise.all(
+    files.map((f) => rm(fileURLToPath(new URL(f, LOGS_DIR))).catch(() => {})),
+  );
+  return files.length;
+}
 
 async function newestLog() {
   let files;
@@ -22,7 +35,11 @@ async function newestLog() {
 }
 
 createServer(async (req, res) => {
-  if (req.url === "/log") {
+  if (req.url === "/clear" && req.method === "POST") {
+    const removed = await clearLogs();
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ removed }));
+  } else if (req.url === "/log") {
     const path = await newestLog();
     const body = path ? await readFile(path, "utf8") : "";
     const name = path ? path.split(/[\\/]/).pop() : "(no log files yet)";

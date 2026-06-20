@@ -23,6 +23,29 @@ function traceMessage(scope: string, message: any): void {
   }
 }
 
+// Extract a JSON object/array from free-form result text. The agent sometimes
+// returns its JSON as the final text answer rather than via structured_output
+// (especially after tool use), so we strip markdown fences and grab the first
+// {...} or [...] block. Used as a fallback before giving up.
+function extractJson(text: string): unknown {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = (fenced ? fenced[1] : text).trim();
+  try {
+    return JSON.parse(body);
+  } catch {
+    const start = body.search(/[[{]/);
+    const end = Math.max(body.lastIndexOf("}"), body.lastIndexOf("]"));
+    if (start !== -1 && end > start) {
+      try {
+        return JSON.parse(body.slice(start, end + 1));
+      } catch {
+        /* fall through */
+      }
+    }
+    return undefined;
+  }
+}
+
 /**
  * Run ONE agent stage as a self-contained query() and return its result.
  *
@@ -44,6 +67,7 @@ export async function runStage<T>(opts: {
   const scope = opts.label ?? "stage";
   log.info(scope, "started");
   let structured: unknown;
+  let resultText = "";
   for await (const message of query({
     prompt: opts.prompt,
     options: {
@@ -58,18 +82,26 @@ export async function runStage<T>(opts: {
     } as any,
   })) {
     traceMessage(scope, message);
-    if (message.type === "result") {
-      if (message.subtype === "success" && (message as any).structured_output) {
-        structured = (message as any).structured_output;
-      }
+    if (message.type === "result" && message.subtype === "success") {
+      structured = (message as any).structured_output ?? structured;
+      resultText = (message as any).result ?? resultText;
     }
   }
-  if (structured === undefined) {
-    log.error(scope, "no structured output returned");
-    throw new Error(`[${scope}] no structured output returned`);
+
+  // Prefer the SDK's validated structured_output; fall back to parsing JSON out
+  // of the final text (the SDK doesn't always populate structured_output after
+  // tool use). Either way we zod-parse, so the typed guarantee holds.
+  let data = structured;
+  if (data === undefined && resultText) {
+    data = extractJson(resultText);
+    if (data !== undefined) log.warn(scope, "used JSON-from-text fallback (no structured_output)");
+  }
+  if (data === undefined) {
+    log.error(scope, "no parseable output returned");
+    throw new Error(`[${scope}] no parseable output returned`);
   }
   log.info(scope, "completed");
-  return opts.schema.parse(structured); // typed + validated at the boundary
+  return opts.schema.parse(data); // typed + validated at the boundary
 }
 
 /** Same as runStage but returns the raw final text (for free-form output like the email). */

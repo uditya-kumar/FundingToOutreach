@@ -29,6 +29,11 @@
     border-radius: 5px; padding: 3px 9px; cursor: pointer; font: inherit;
   }
   .filters button.off { opacity: 0.35; }
+  #clear {
+    background: var(--bg); color: var(--error); border: 1px solid var(--error);
+    border-radius: 5px; padding: 3px 9px; cursor: pointer; font: inherit;
+  }
+  #clear:hover { background: var(--error); color: #fff; }
   .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   #count { color: var(--muted); }
   main { padding: 8px 16px 40px; }
@@ -58,6 +63,7 @@
     <button data-lvl="DATA"><span class="dot" style="background:var(--data)"></span> DATA</button>
   </span>
   <label><input type="checkbox" id="follow" checked /> auto-scroll</label>
+  <button id="clear" title="Delete all log files">🗑 Clear logs</button>
   <span id="count"></span>
 </header>
 <main id="log"></main>
@@ -119,6 +125,20 @@ function render(text) {
   countEl.textContent = logEl.querySelectorAll(".row").length + " lines";
   if (followEl.checked) window.scrollTo(0, document.body.scrollHeight);
 }
+
+// Clear all log files
+document.getElementById("clear").addEventListener("click", async () => {
+  if (!confirm("Delete ALL log files? This cannot be undone.")) return;
+  try {
+    const res = await fetch("/clear", { method: "POST" });
+    const { removed } = await res.json();
+    fileEl.textContent = `(cleared ${removed} log file${removed === 1 ? "" : "s"})`;
+    logEl.innerHTML = "";
+    countEl.textContent = "0 lines";
+  } catch {
+    alert("Clear failed — is the viewer server running?");
+  }
+});
 
 async function poll() {
   try {

@@ -19,9 +19,28 @@ const allServers = {
 };
 
 const today = new Date().toISOString().slice(0, 10);
+const REPORT_PATH = new URL("../report.md", import.meta.url);
 
 type Scored = z.infer<typeof ScoredList>["startups"][number];
 type Pow = z.infer<typeof ProofOfWork>;
+
+// Some days simply have no funded startups in-sector within 72h. Write a valid,
+// honest report and stop — never feed [] downstream into ranking/rendering.
+async function writeNoTargets(reason: string): Promise<void> {
+  const md = `Subject: Daily Startup Targets — ${today}
+
+Hi Uditya,
+
+No qualifying startup opportunities today — ${reason}
+
+This is expected on quiet days. The scan will run again tomorrow.
+
+## Today's Action
+Spend 30 minutes shipping on an existing proof-of-work or open-source PR instead.
+`;
+  await writeFile(REPORT_PATH, md, "utf8");
+  log.warn("pipeline", `no targets (${reason}) — wrote placeholder report.md, stopping`);
+}
 
 async function main() {
   log.info("pipeline", `run start — date ${today}`);
@@ -38,6 +57,10 @@ async function main() {
     maxTurns: fundingResearcher.maxTurns,
   });
   log.data("pipeline", "candidates", candidates);
+  if (candidates.length === 0) {
+    await writeNoTargets("no in-sector startups announced funding in the last 72h");
+    return;
+  }
 
   // ── Step 3+4: enrich + score ─────────────────────────────────────────────
   log.info("pipeline", "Step 3+4: enriching + scoring");
@@ -51,6 +74,10 @@ async function main() {
     maxTurns: fitStrategist.maxTurns,
   });
   log.data("pipeline", "scored", startups);
+  if (startups.length === 0) {
+    await writeNoTargets("candidates were found but none survived enrichment/scoring");
+    return;
+  }
 
   // ── Step 5: top-5 proof-of-work, ONE startup per agent, HARDCODED PARALLEL ─
   const top5 = [...startups].sort((a, b) => b.fitScore - a.fitScore).slice(0, 5);
@@ -76,6 +103,10 @@ async function main() {
   const pows = powResults.filter((p): p is Pow => p !== null);
   log.info("pipeline", `Step 5: ${pows.length}/${top5.length} proof-of-work plans`);
   log.data("pipeline", "proofOfWork", pows);
+  if (pows.length === 0) {
+    await writeNoTargets("top startups were found but proof-of-work design failed for all of them");
+    return;
+  }
 
   // ── Step 6: deterministic ranking (code, not LLM) ────────────────────────
   const byName = new Map<string, Scored>(top5.map((s) => [s.name, s]));
@@ -110,7 +141,6 @@ async function main() {
     maxTurns: reportWriter.maxTurns,
   });
 
-  const REPORT_PATH = new URL("../report.md", import.meta.url);
   await writeFile(REPORT_PATH, email, "utf8");
   log.info("pipeline", `Step 7: wrote report.md (${Buffer.byteLength(email)} bytes); send is a separate gated step`);
   log.info("pipeline", `run done — top: ${ranked[0]?.name ?? "none"}`);
