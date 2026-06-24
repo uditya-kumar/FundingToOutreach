@@ -23,7 +23,9 @@ async function fetchFeed(source: string, url: string): Promise<Item[]> {
     const items = Array.isArray(raw) ? raw : [raw];
     return items.map((it: any) => ({
       source,
-      title: decodeEntities(String(it.title?.["#text"] ?? it.title ?? "")).trim(),
+      title: decodeEntities(
+        String(it.title?.["#text"] ?? it.title ?? ""),
+      ).trim(),
       url: String(it.link?.href ?? it.link ?? it.guid ?? "").trim(),
       date: String(it.pubDate ?? it.published ?? it.updated ?? "").trim(),
     }));
@@ -31,11 +33,6 @@ async function fetchFeed(source: string, url: string): Promise<Item[]> {
     return []; // one dead feed must never break the run
   }
 }
-
-// Loose funding prefilter (NOT a classifier — false positives are dropped later
-// by the sector filter). Keep it broad so a real raise is never missed.
-const FUND =
-  /(raise[sd]?|funding|series\s+[a-e]|seed|pre-seed|round|backed|secures?|bags?|\$|crore|million)/i;
 
 export const rssServer = createSdkMcpServer({
   name: "funding-feeds",
@@ -49,7 +46,9 @@ export const rssServer = createSdkMcpServer({
       { hoursBack: z.number().default(72) },
       async ({ hoursBack }) => {
         const all = (
-          await Promise.all(Object.entries(FEEDS).map(([s, u]) => fetchFeed(s, u)))
+          await Promise.all(
+            Object.entries(FEEDS).map(([s, u]) => fetchFeed(s, u)),
+          )
         ).flat();
 
         // 1) window by date (deterministic — not the model's job)
@@ -59,13 +58,10 @@ export const rssServer = createSdkMcpServer({
           return !Number.isNaN(t) && t >= cutoffMs;
         });
 
-        // 2) keep only likely funding stories
-        const funding = fresh.filter((i) => FUND.test(i.title));
-
-        // 3) dedupe duplicate titles within THIS run (two feeds, same story).
+        // 2) dedupe duplicate titles within THIS run (two feeds, same story).
         // Stateless — cross-run dedup is a future DB concern.
         const seen = new Set<string>();
-        const deduped = funding.filter((i) => {
+        const deduped = fresh.filter((i) => {
           const k = i.title.toLowerCase().trim();
           if (seen.has(k)) return false;
           seen.add(k);
