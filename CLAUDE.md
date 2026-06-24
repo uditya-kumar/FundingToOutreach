@@ -7,7 +7,7 @@ Architecture rationale: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Execution flow: 
 ## Stack
 - Runtime: Node 22, TypeScript via `tsx` (`npm start` → `npx tsx src/agent.ts`). ESM (`"type": "module"`).
 - `@anthropic-ai/claude-agent-sdk` — orchestrator `query()` loop + programmatic subagents (`AgentDefinition`).
-- `fast-xml-parser`, `zod` — RSS tool. Exa MCP (http) for web enrichment.
+- `fast-xml-parser`, `cheerio`, `zod` — RSS tool + web scraping. Exa MCP (http) for web enrichment.
 
 ## Architecture: orchestrator + 4 subagents
 The main `query()` loop is the **orchestrator** (`allowedTools` includes `Agent`). It runs `task.md`'s
@@ -16,7 +16,7 @@ schema-validated JSON object, never prose** — typed, compact, lossless (see Ru
 
 | Subagent | task.md steps | Tools | Returns (schema) |
 |---|---|---|---|
-| `funding-researcher` | 1 + 2 | `get_recent_funding`, Exa, WebFetch | `Candidate[]` — name, url, date, oneLiner, sector |
+| `funding-researcher` | 1 + 2 | `get_recent_funding`, `get_gallery_funding`, `get_india_funding`, Exa | `Candidate[]` — name, url, date, oneLiner, sector |
 | `fit-strategist` | 3 + 4 | Exa, WebFetch | `ScoredStartup[]` — + founders, links, score, accessibility, learning |
 | `pow-designer` | 5 | Exa, WebFetch, Read | `ProofOfWork` — one per startup, 5 parallel instances |
 | `report-writer` | 6 + 7 | Read, Write | writes `report.md` |
@@ -76,14 +76,18 @@ Email rendered in the exact `task.md` template (subject, top opportunity, proof-
 Modular: `config/feeds.ts` (data), `lib/{html,mcp}.ts` (shared helpers), one tool per file in `tools/`,
 barrel `tools/index.ts` → `{ mcpServers, ALL_TOOL_NAMES }`.
 - `funding-feeds` / `get_recent_funding` — RSS sweep → compact JSON (Step 1 plumbing).
+- `startups-gallery` / `get_gallery_funding` — scrapes startups.gallery/news via cheerio. Returns name, url,
+  funding, series, investor, source article URL, date. Filters to last N hours (default 72).
+- `ipo-platform` / `get_india_funding` — scrapes ipoplatform.com Indian startup funding via cheerio. Returns
+  name, url, sector, date, location, funding amount, description. India-focused. Filters to last N hours (default 72).
 - `link-tools` / `check_url` — general HTTP liveness check for public URLs (hiring/careers pages). `ok`=2xx/3xx.
   NOT for personal LinkedIn `/in/` (anti-bot) — those use provenance (Rule 4).
 - `ranking-tools` / `rank_opportunities` — Step 6 math, reproducible (don't let LLM compute it).
 - `report-tools` / `save_report` — write `report.md` before send (Rule 5 write-half).
 
 ## Status / TODO
-- [x] `src/tools/*` — 4 deterministic tools built, modular, tested.
-- [ ] `src/agent.ts` — wire orchestrator + 4 subagents with schemas (currently a single-agent stub).
+- [x] `src/tools/*` — 6 deterministic tools built, modular, tested.
+- [x] `src/agent.ts` — orchestrator + 4 subagents wired with schemas.
 - [ ] `email_send` mechanism (MCP or cron mailer on `report.md`) — only capability `task.md` needs that's missing.
 - [ ] Daily cron / scheduled trigger.
 - [ ] (Future) SQL lead store for cross-run dedup.

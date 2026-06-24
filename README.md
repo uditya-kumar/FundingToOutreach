@@ -28,7 +28,7 @@ An **orchestrator** (`query()` loop) drives four least-privilege subagents. **Ev
 
 | Subagent | What it does | Returns |
 |---|---|---|
-| `funding-researcher` | Sweeps ~9 funding sources for last-72h raises and filters to edge sectors | `Candidate[]` — name, url, date, sector |
+| `funding-researcher` | Sweeps 4 funding sources (RSS, startups.gallery, ipoplatform, Exa) for last-72h raises and filters to edge sectors | `Candidate[]` — name, url, date, sector |
 | `fit-strategist` | Enriches founders/links/team size and scores fit /10 | `ScoredStartup[]` — + founders, links, score |
 | `pow-designer` | Designs a sub-48h proof-of-work per startup (5 in parallel) | `ProofOfWork` — one per startup |
 | `report-writer` | Renders the ranked daily email | writes `report.md` |
@@ -39,10 +39,14 @@ Ranking (Step 6) and the gated send (Step 7) stay in the orchestrator. See [ARCH
 
 Heavy/dirty work lives in tools so raw data never pollutes the context window.
 
-- **`get_recent_funding`** — fetches 8 RSS feeds in parallel → windows by date → keyword-filters → dedupes → returns ~12 KB compact JSON.
-- **`check_url`** — HTTP liveness check for public hiring/careers pages.
-- **`rank_opportunities`** — Step 6 ranking math.
-- **`save_report`** — writes `report.md` before any send.
+| Tool | Server | What it does |
+|---|---|---|
+| `get_recent_funding` | `funding-feeds` | Fetches 8 RSS feeds in parallel → windows by date → keyword-filters → dedupes → returns compact JSON |
+| `get_gallery_funding` | `startups-gallery` | Scrapes startups.gallery/news via cheerio. Returns name, funding, series, investor, source URL, date. Filters to last N hours (default 72) |
+| `get_india_funding` | `ipo-platform` | Scrapes ipoplatform.com for Indian startup funding. Returns name, sector, location, funding, description. India-focused, filters to last N hours (default 72) |
+| `check_url` | `link-tools` | HTTP liveness check for public hiring/careers pages |
+| `rank_opportunities` | `ranking-tools` | Step 6 ranking math — deterministic, not LLM-computed |
+| `save_report` | `report-tools` | Writes `report.md` before any send |
 
 ## Quick start
 
