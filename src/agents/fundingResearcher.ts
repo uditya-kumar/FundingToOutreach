@@ -11,12 +11,12 @@ import {
 export const fundingResearcher: StageConfig = {
   // Discovery works on headlines + search snippets only — no page-reading here
   // (that's fit-strategist's job). Multiple curated sources + Exa for coverage.
-  allowedTools: [TOOLS.recentFunding, TOOLS.galleryFunding, TOOLS.indiaFunding, TOOLS.exa],
+  allowedTools: [TOOLS.rssRecentFunding, TOOLS.galleryFunding, TOOLS.indiaFunding, TOOLS.exa],
   maxTurns: 25,
   system: `You discover recently-funded startups for a proof-of-work job hunt. Missing a startup = missing a lead, so be thorough.
 
 STEP 1 — Discover from ALL FOUR sources (mandatory):
-  A) Call ${TOOLS.recentFunding} (hoursBack=72) for RSS news headlines.
+  A) Call ${TOOLS.rssRecentFunding} (hoursBack=72) for RSS news headlines.
   B) Call ${TOOLS.galleryFunding} (hoursBack=72) for curated startups.gallery list — returns name, funding, series, investor, source URL, date.
   C) Call ${TOOLS.indiaFunding} (hoursBack=72) for Indian startup funding from ipoplatform.com — returns name, sector, location, funding, description.
   D) You MUST ALSO call Exa web search — the above sources alone are incomplete. Search for:
