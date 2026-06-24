@@ -1,10 +1,10 @@
 import { SCHEMA_TEXT } from "@/schemas";
-import { T, PROFILE, jsonOnly, type StageConfig } from "@/agents/_shared";
+import { TOOLS, PROFILE, jsonOnly, type StageConfig } from "@/agents/_shared";
 
 // 3. Proof-of-work designer (task.md Step 5). ONE startup per instance —
 // the pipeline runs five of these in parallel. Returns ProofOfWork.
 export const powDesigner: StageConfig = {
-  allowedTools: ["WebFetch", T.exa],
+  allowedTools: ["WebFetch", TOOLS.exa],
   maxTurns: 20,
   system: `You design a proof-of-work pitch for ONE startup (its data is in the prompt) on behalf of:
 ${PROFILE}

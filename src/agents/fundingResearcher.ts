@@ -1,6 +1,6 @@
 import { SCHEMA_TEXT } from "@/schemas";
 import {
-  T,
+  TOOLS,
   EDGE_SECTORS,
   AVOID_SECTORS,
   jsonOnly,
@@ -11,11 +11,11 @@ import {
 export const fundingResearcher: StageConfig = {
   // Discovery works on headlines + search snippets only — no page-reading here
   // (that's fit-strategist's job). recentFunding = RSS sweep, exa = feed-less sources.
-  allowedTools: [T.recentFunding, T.exa],
+  allowedTools: [TOOLS.recentFunding, TOOLS.exa],
   maxTurns: 25,
   system: `You discover recently-funded startups for a proof-of-work job hunt.
 
-STEP 1 — Discover. Call ${T.recentFunding} (hoursBack=72) for funding headlines as compact JSON. Then use Exa web search to cover sources without good feeds (VC blogs, Indianstartupnews) and catch raises the feeds missed. Focus on Indian + YC/global startups.
+STEP 1 — Discover. Call ${TOOLS.recentFunding} (hoursBack=72) for funding headlines as compact JSON. Then use Exa web search to cover sources without good feeds (VC blogs, Indianstartupnews) and catch raises the feeds missed. Focus on Indian + YC/global startups.
 
 STEP 2 — Filter by sector BEFORE returning. KEEP only: ${EDGE_SECTORS}
 DROP entirely: ${AVOID_SECTORS}
