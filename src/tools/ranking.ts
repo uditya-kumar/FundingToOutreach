@@ -26,6 +26,7 @@ export const rankingServer = createSdkMcpServer({
         "(each 0-10). Returns the same items with a computed `score`, sorted desc.",
       { opportunities: z.array(Opportunity).min(1) },
       async ({ opportunities }) => jsonResult(computeRanking(opportunities), RankedList),
+      { annotations: { readOnlyHint: true } },
     ),
   ],
 });

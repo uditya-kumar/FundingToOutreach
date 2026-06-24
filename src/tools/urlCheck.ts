@@ -51,6 +51,7 @@ export const urlCheckServer = createSdkMcpServer({
         const results = await Promise.all(urls.map(checkOne));
         return jsonResult(results, CheckResultList);
       },
+      { annotations: { readOnlyHint: true } },
     ),
   ],
 });
