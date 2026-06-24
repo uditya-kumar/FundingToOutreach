@@ -6,6 +6,8 @@ export { PROFILE, EDGE_SECTORS, AVOID_SECTORS, profile } from "@/config/profile"
 // Fully-qualified MCP tool names (mirror tools/index.ts).
 export const TOOLS = {
   recentFunding: "mcp__funding-feeds__get_recent_funding",
+  galleryFunding: "mcp__startups-gallery__get_gallery_funding",
+  indiaFunding: "mcp__ipo-platform__get_india_funding",
   checkUrl: "mcp__link-tools__check_url",
   exa: "mcp__exa-web-search__*",
 } as const;
