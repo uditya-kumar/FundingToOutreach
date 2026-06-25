@@ -80,7 +80,10 @@ async function main() {
   }
 
   // ── Step 5: top-5 proof-of-work, ONE startup per agent, HARDCODED PARALLEL ─
-  const top5 = [...startups].sort((a, b) => b.fitScore - a.fitScore).slice(0, 5);
+  // Gate on the SAME signal as the final rank (fitScore × expectedLearning) so
+  // the gate can never drop a lead the Step-6 rank would have promoted.
+  const preScore = (s: Scored) => s.fitScore * s.expectedLearning;
+  const top5 = [...startups].sort((a, b) => preScore(b) - preScore(a)).slice(0, 5);
   log.info("pipeline", `Step 5: proof-of-work for top ${top5.length} (parallel)`);
 
   const powResults = await Promise.all(
@@ -115,9 +118,8 @@ async function main() {
       const s = byName.get(p.name);
       return {
         name: p.name,
+        fitScore: s?.fitScore ?? 0,
         expectedLearning: s?.expectedLearning ?? 0,
-        hiringProbability: p.responseProbabilityScore,
-        founderAccessibility: s?.founderAccessibility ?? 0,
       };
     }),
   );

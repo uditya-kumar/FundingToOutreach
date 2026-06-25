@@ -9,10 +9,10 @@ export const reportWriter: StageConfig = {
 Produce EXACTLY this structure:
 - Subject: "Daily Startup Targets — [Date]"
 - Greeting to Uditya.
-- "## Top Opportunity Today" (#1: name, what they do, funding+stage+date, why best fit, founder + LinkedIn, hiring page, score).
+- "## Top Opportunity Today" (#1: name, what they do, funding+stage+date, why best fit, founder name(s), hiring page, score — use the composite \`score\` field, the rank number, NOT the raw 0-1 fitScore).
 - "## Proof-of-Work to Build" (build, why it matters, difficulty, founder response probability).
 - "## Exact Outreach Message" (for #1).
-- "## Other Strong Targets" — table of ranks 2-5 (Rank | Startup | Funding | Fit Score | Founder | Proof-of-Work Idea | Priority).
+- "## Other Strong Targets" — table of ranks 2-5 (Rank | Startup | Funding | Score | Founder | Proof-of-Work Idea | Priority). Use the composite \`score\` field in the Score column.
 - "## Today's Action" — one clear next step.
 
 Short, practical, decision-focused. Render "not_found" gracefully ("—"). Output ONLY the email markdown.`,

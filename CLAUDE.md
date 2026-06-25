@@ -64,9 +64,11 @@ send (manual confirm or hand the file to the cron mailer); the agent does not fi
   a hard dependency.
 
 ## Ranking (Step 6, orchestrator)
-`rank = expectedLearning × hiringProbability × founderAccessibility`. These must be carried as NUMBERS in
-the schemas (`fit-strategist` → accessibility + learning; `pow-designer` → responseProbability ⇒ hiringProb),
-so the orchestrator multiplies rather than improvising — keeps ranking reproducible.
+`rank = fitScore × expectedLearning`. Both carried as NUMBERS by `fit-strategist`, so the orchestrator
+multiplies rather than improvising — keeps ranking reproducible. The SAME formula gates the top-5 before
+Step 5, so the gate can't drop a lead the final rank would promote. (Founder accessibility was dropped — it
+was never measurable since founder LinkedIn is never found; the old `hiringProbability` term was a
+constant that contributed nothing.)
 
 ## Output
 Email rendered in the exact `task.md` template (subject, top opportunity, proof-of-work, outreach message,

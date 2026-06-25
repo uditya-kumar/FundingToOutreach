@@ -20,10 +20,11 @@ export const Candidate = z.object({
 export const CandidateList = z.object({ candidates: z.array(Candidate) });
 
 // ── fit-strategist → orchestrator (Steps 3+4) ──────────────────────────────
+// Founder NAMES only. LinkedIn /in/ URLs are effectively never returned by
+// Exa/WebFetch and must never be constructed from a name, so we don't carry a
+// linkedin field at all — names are sufficient for outreach personalization.
 export const Founder = z.object({
   name: z.string(),
-  linkedin: z.string(), // verbatim from a source, or "not_found" — NEVER constructed
-  source: z.string(), // where the linkedin came from, or "not_found"
 });
 export const ScoredStartup = z.object({
   name: z.string(),
@@ -37,8 +38,7 @@ export const ScoredStartup = z.object({
   teamSize: z.string(), // or "not_found"
   whyHiring: z.string(),
   whyHireUditya: z.string(),
-  fitScore: z.number().min(0).max(10),
-  founderAccessibility: z.number().min(0).max(10),
+  fitScore: z.number().min(0).max(1), // DECIMAL 0-1 (fine-grained, so ties don't force discovery-order tie-breaks)
   expectedLearning: z.number().min(0).max(10),
 });
 export const ScoredList = z.object({ startups: z.array(ScoredStartup) });
@@ -50,8 +50,7 @@ export const ProofOfWork = z.object({
   build: z.string(), // the <48h project
   whyItMatters: z.string(), // business impact
   difficulty: z.number().min(0).max(10),
-  responseProbability: z.enum(["Low", "Medium", "High"]),
-  responseProbabilityScore: z.number().min(0).max(10), // → hiringProbability in ranking
+  responseProbability: z.enum(["Low", "Medium", "High"]), // qualitative, for the report only — NOT used in ranking
   outreachMessage: z.string(),
 });
 
@@ -79,9 +78,8 @@ export const CheckResultList = z.array(CheckResult);
 export const RankedOpportunity = z.object({
   rank: z.number(),
   name: z.string(),
+  fitScore: z.number(),
   expectedLearning: z.number(),
-  hiringProbability: z.number(),
-  founderAccessibility: z.number(),
   score: z.number(),
 });
 export const RankedList = z.array(RankedOpportunity);
@@ -105,6 +103,6 @@ export const RunSummary = z.object({
 // ── Compact schema descriptions embedded into prompts ──────────────────────
 export const SCHEMA_TEXT = {
   candidates: `{"candidates":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"source":string,"url":string,"sector":string}]}`,
-  scored: `{"startups":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"url":string,"founders":[{"name":string,"linkedin":string|"not_found","source":string}],"hiringPage":string|"not_found","teamSize":string|"not_found","whyHiring":string,"whyHireUditya":string,"fitScore":number(0-10),"founderAccessibility":number(0-10),"expectedLearning":number(0-10)}]}`,
-  proofOfWork: `{"name":string,"painPoints":[string],"build":string,"whyItMatters":string,"difficulty":number(0-10),"responseProbability":"Low"|"Medium"|"High","responseProbabilityScore":number(0-10),"outreachMessage":string}`,
+  scored: `{"startups":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"url":string,"founders":[{"name":string}],"hiringPage":string|"not_found","teamSize":string|"not_found","whyHiring":string,"whyHireUditya":string,"fitScore":number(0.0-1.0 decimal),"expectedLearning":number(0-10)}]}`,
+  proofOfWork: `{"name":string,"painPoints":[string],"build":string,"whyItMatters":string,"difficulty":number(0-10),"responseProbability":"Low"|"Medium"|"High","outreachMessage":string}`,
 };

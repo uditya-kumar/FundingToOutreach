@@ -18,9 +18,9 @@
 
 ## What it does
 
-Each day the agent runs a 7-step pipeline: discovers startups that announced funding in the last 72h, filters to sectors where the user has an edge, enriches + scores founder accessibility, designs a sub-48h proof-of-work per startup, ranks them, and renders a decision-focused email to [`report.md`](./report.md).
+Each day the agent runs a 7-step pipeline: discovers startups that announced funding in the last 72h, filters to sectors where the user has an edge, enriches + scores fit and expected learning, designs a sub-48h proof-of-work per startup, ranks them, and renders a decision-focused email to [`report.md`](./report.md).
 
-> **Ranking** = `expectedLearning × hiringProbability × founderAccessibility` — computed in code, not by the LLM, so it's reproducible.
+> **Ranking** = `fitScore × expectedLearning` — computed in code, not by the LLM, so it's reproducible.
 
 ## Architecture
 

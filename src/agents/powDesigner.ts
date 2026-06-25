@@ -14,7 +14,7 @@ Research the startup briefly if needed, then produce:
 - build: a specific project Uditya can build in UNDER 48 hours targeting a pain point.
 - whyItMatters: business impact (revenue, cost, CX, or founder/team time saved).
 - difficulty: 0-10.
-- responseProbability: "Low"|"Medium"|"High", and responseProbabilityScore 0-10.
+- responseProbability: "Low"|"Medium"|"High" (qualitative; shown in the report, not used for ranking).
 - outreachMessage: a short cold message personalized to THIS startup and build, in this shape:
   Subject: Built a quick idea for [Startup] around [problem]
   Hi [Founder], Saw [Startup] recently raised [funding/stage]. I noticed a possible opportunity around [specific problem].
