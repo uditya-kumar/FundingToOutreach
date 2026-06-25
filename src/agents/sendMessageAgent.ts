@@ -100,8 +100,11 @@ Hi {{user_first_name}},
 >
 >
 > Best,
+>
 > {{user_first_name}}
+>
 > GitHub: {{github_handle}}
+>
 > LinkedIn: {{linkedin_handle}}
 
 </details>
