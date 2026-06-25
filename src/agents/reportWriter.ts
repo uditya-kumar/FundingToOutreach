@@ -1,4 +1,4 @@
-import { type StageConfig } from "@/agents/_shared";
+import { FIRST_NAME, type StageConfig } from "@/agents/_shared";
 
 // 4. Report writer (task.md Step 7 render). Returns the email markdown as text.
 export const reportWriter: StageConfig = {
@@ -8,7 +8,7 @@ export const reportWriter: StageConfig = {
 
 Produce EXACTLY this structure:
 - Subject: "Daily Startup Targets — [Date]"
-- Greeting to Uditya.
+- Greeting to ${FIRST_NAME}.
 - "## Top Opportunity Today" (#1: name, what they do, funding+stage+date, why best fit, founder name(s), hiring page, score — use the composite \`score\` field, the rank number, NOT the raw 0-1 fitScore).
 - "## Proof-of-Work to Build" (build, why it matters, difficulty, founder response probability).
 - "## Exact Outreach Message" (for #1).

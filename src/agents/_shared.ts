@@ -1,7 +1,7 @@
 // Shared building blocks for every agent stage config.
 
 // Profile-derived strings come from config/userProfile.json (edit there, not here).
-export { PROFILE, EDGE_SECTORS, AVOID_SECTORS, profile } from "@/config/profile";
+export { PROFILE, EDGE_SECTORS, AVOID_SECTORS, FIRST_NAME, SIGNATURE, profile } from "@/config/profile";
 
 // Fully-qualified MCP tool names (mirror tools/index.ts).
 export const TOOLS = {

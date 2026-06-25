@@ -37,7 +37,7 @@ export const ScoredStartup = z.object({
   hiringPage: z.string(), // HTTP-verified URL, or "not_found"
   teamSize: z.string(), // or "not_found"
   whyHiring: z.string(),
-  whyHireUditya: z.string(),
+  whyHireCandidate: z.string(),
   fitScore: z.number().min(0).max(1), // DECIMAL 0-1 (fine-grained, so ties don't force discovery-order tie-breaks)
   expectedLearning: z.number().min(0).max(10),
 });
@@ -103,6 +103,6 @@ export const RunSummary = z.object({
 // ── Compact schema descriptions embedded into prompts ──────────────────────
 export const SCHEMA_TEXT = {
   candidates: `{"candidates":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"source":string,"url":string,"sector":string}]}`,
-  scored: `{"startups":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"url":string,"founders":[{"name":string}],"hiringPage":string|"not_found","teamSize":string|"not_found","whyHiring":string,"whyHireUditya":string,"fitScore":number(0.0-1.0 decimal),"expectedLearning":number(0-10)}]}`,
+  scored: `{"startups":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"url":string,"founders":[{"name":string}],"hiringPage":string|"not_found","teamSize":string|"not_found","whyHiring":string,"whyHireCandidate":string,"fitScore":number(0.0-1.0 decimal),"expectedLearning":number(0-10)}]}`,
   proofOfWork: `{"name":string,"painPoints":[string],"build":string,"whyItMatters":string,"difficulty":number(0-10),"responseProbability":"Low"|"Medium"|"High","outreachMessage":string}`,
 };

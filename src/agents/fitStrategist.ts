@@ -1,5 +1,5 @@
 import { SCHEMA_TEXT } from "@/schemas";
-import { TOOLS, PROFILE, jsonOnly, type StageConfig } from "@/agents/_shared";
+import { TOOLS, PROFILE, FIRST_NAME, jsonOnly, type StageConfig } from "@/agents/_shared";
 
 // 2. Enrich + score (task.md Steps 3+4). Returns ScoredList.
 export const fitStrategist: StageConfig = {
@@ -17,8 +17,8 @@ STEP 3 — Enrich via Exa + WebFetch: founder name(s), funding stage, team size,
 - FOUNDERS: names only. Only emit a founder name that appears in an Exa/WebFetch result — never guess. Do NOT include LinkedIn URLs (they're never reliably returned and must never be constructed).
 - NEVER pause to ask the user a question — this runs unattended. Apply the rules above and decide yourself.
 
-STEP 4 — Think like a founder. Write whyHiring and whyHireUditya (cite his evidence). Then score:
-- fitScore: a DECIMAL from 0.0 to 1.0 (e.g. 0.92, 0.78) for how well Uditya's skills match / could contribute. Use the full range and fine gradations — do NOT round to 0.1 steps; distinguish a 0.91 from a 0.86. Avoid ties between different startups.
+STEP 4 — Think like a founder. Write whyHiring and whyHireCandidate (cite his evidence). Then score:
+- fitScore: a DECIMAL from 0.0 to 1.0 (e.g. 0.92, 0.78) for how well ${FIRST_NAME}'s skills match / could contribute. Use the full range and fine gradations — do NOT round to 0.1 steps; distinguish a 0.91 from a 0.86. Avoid ties between different startups.
 - expectedLearning: 0-10 for how much he'd grow there.${jsonOnly(
     SCHEMA_TEXT.scored,
   )}`,

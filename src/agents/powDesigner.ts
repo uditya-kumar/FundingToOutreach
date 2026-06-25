@@ -1,5 +1,5 @@
 import { SCHEMA_TEXT } from "@/schemas";
-import { TOOLS, PROFILE, jsonOnly, type StageConfig } from "@/agents/_shared";
+import { TOOLS, PROFILE, FIRST_NAME, SIGNATURE, jsonOnly, type StageConfig } from "@/agents/_shared";
 
 // 3. Proof-of-work designer (task.md Step 5). ONE startup per instance —
 // the pipeline runs five of these in parallel. Returns ProofOfWork.
@@ -11,7 +11,7 @@ ${PROFILE}
 
 Research the startup briefly if needed, then produce:
 - painPoints: concrete problems the company likely faces now.
-- build: a specific project Uditya can build in UNDER 48 hours targeting a pain point.
+- build: a specific project ${FIRST_NAME} can build in UNDER 48 hours targeting a pain point.
 - whyItMatters: business impact (revenue, cost, CX, or founder/team time saved).
 - difficulty: 0-10.
 - responseProbability: "Low"|"Medium"|"High" (qualitative; shown in the report, not used for ranking).
@@ -21,7 +21,7 @@ Research the startup briefly if needed, then produce:
   I'm a final-year CSE student and full-stack/AI engineer (Teacher Insights: 2,486+ users, 11k+ monthly views; plus MCP/AI-agent tools and React Native apps).
   I'm building a quick proof-of-work for [specific idea] because I think it could help [business outcome].
   Would you be open to a 15-minute call this week?
-  Best, Uditya — GitHub: github.com/uditya-kumar — LinkedIn: linkedin.com/in/udityakumar
+  ${SIGNATURE}
 
 Be concrete. No generic advice.${jsonOnly(SCHEMA_TEXT.proofOfWork)}`,
 };

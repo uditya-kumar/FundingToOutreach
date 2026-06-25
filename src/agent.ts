@@ -10,6 +10,7 @@ import { runStage, runStageText } from "@/lib/stage";
 import { computeRanking } from "@/lib/ranking";
 import { log } from "@/lib/logger";
 import { CandidateList, ScoredList, ProofOfWork } from "@/schemas";
+import { FIRST_NAME } from "@/config/profile";
 import { z } from "zod";
 
 // Exa web search, shared across stages that whitelist it.
@@ -29,7 +30,7 @@ type Pow = z.infer<typeof ProofOfWork>;
 async function writeNoTargets(reason: string): Promise<void> {
   const md = `Subject: Daily Startup Targets — ${today}
 
-Hi Uditya,
+Hi ${FIRST_NAME},
 
 No qualifying startup opportunities today — ${reason}
 
