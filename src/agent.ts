@@ -3,11 +3,12 @@ import {
   fundingResearcher,
   fitStrategist,
   powDesigner,
-  reportWriter,
+  sendMessageAgent,
 } from "@/agents";
 import { mcpServers } from "@/tools";
 import { runStage, runStageText } from "@/lib/stage";
 import { computeRanking } from "@/lib/ranking";
+import { sendTelegramMessage } from "@/lib/telegram";
 import { log } from "@/lib/logger";
 import { CandidateList, ScoredList, ProofOfWork } from "@/schemas";
 import { FIRST_NAME } from "@/config/profile";
@@ -127,8 +128,11 @@ async function main() {
   log.data("pipeline", "ranking", ranked);
   log.info("pipeline", `Step 6: top — ${ranked[0]?.name} (score ${ranked[0]?.score})`);
 
-  // ── Step 7: render email + save report.md (send stays gated/external) ─────
-  log.info("pipeline", "Step 7: rendering email");
+  // ── Step 7: render message → save report.md → send to Telegram ───────────
+  // Render-then-send: the agent ONLY produces the message markdown; code writes
+  // the artifact FIRST (survives a transport failure) then performs the
+  // irreversible send. Send stays in the orchestrator, not the subagent.
+  log.info("pipeline", "Step 7: rendering message");
   const dossier = ranked.map((r) => ({
     rank: r.rank,
     score: r.score,
@@ -136,16 +140,23 @@ async function main() {
     proofOfWork: pows.find((p) => p.name === r.name),
   }));
 
-  const email = await runStageText({
-    label: "report-writer",
-    system: reportWriter.system,
-    prompt: `Today is ${today}. Render the daily email from this ranked data:\n${JSON.stringify(dossier)}`,
-    allowedTools: reportWriter.allowedTools,
-    maxTurns: reportWriter.maxTurns,
+  const message = await runStageText({
+    label: "send-message-agent",
+    system: sendMessageAgent.system,
+    prompt: `Today is ${today}. Render the daily message from this ranked data:\n${JSON.stringify(dossier)}`,
+    allowedTools: sendMessageAgent.allowedTools,
+    maxTurns: sendMessageAgent.maxTurns,
   });
 
-  await writeFile(REPORT_PATH, email, "utf8");
-  log.info("pipeline", `Step 7: wrote report.md (${Buffer.byteLength(email)} bytes); send is a separate gated step`);
+  await writeFile(REPORT_PATH, message, "utf8");
+  log.info("pipeline", `Step 7: wrote report.md (${Buffer.byteLength(message)} bytes)`);
+
+  const sent = await sendTelegramMessage(message);
+  if (sent.ok) {
+    log.info("pipeline", `Step 7: sent to Telegram (status ${sent.status})`);
+  } else {
+    log.error("pipeline", `Step 7: Telegram send failed — ${sent.error}. report.md is intact.`);
+  }
   log.info("pipeline", `run done — top: ${ranked[0]?.name ?? "none"}`);
 }
 

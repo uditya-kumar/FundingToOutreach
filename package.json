@@ -7,7 +7,7 @@
   "type": "module",
   "main": "src/agent.ts",
   "scripts": {
-    "start": "npx tsx src/agent.ts",
+    "start": "npx tsx --env-file=.env src/agent.ts",
     "view": "node log-viewer.mjs"
   },
   "dependencies": {

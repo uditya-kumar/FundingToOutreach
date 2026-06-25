@@ -19,9 +19,11 @@ schema-validated JSON object, never prose** — typed, compact, lossless (see Ru
 | `funding-researcher` | 1 + 2 | `get_recent_funding`, `get_gallery_funding`, `get_india_funding`, Exa | `Candidate[]` — name, url, date, oneLiner, sector |
 | `fit-strategist` | 3 + 4 | Exa, WebFetch | `ScoredStartup[]` — + founders, links, score, accessibility, learning |
 | `pow-designer` | 5 | Exa, WebFetch, Read | `ProofOfWork` — one per startup, 5 parallel instances |
-| `report-writer` | 6 + 7 | Read, Write | writes `report.md` |
+| `sendMessageAgent` | 7 (render) | (none) | returns Telegram message markdown (frozen template) |
 
-Step 6 (ranking math) and Step 7 (gated send) stay in the **orchestrator**, not a subagent.
+Step 6 (ranking math) and Step 7 (write `report.md` + Telegram send) stay in the **orchestrator**, not a
+subagent. `sendMessageAgent` ONLY renders the message text into a frozen template; the orchestrator writes
+the artifact, then `sendTelegramMessage` (`src/lib/telegram.ts`) performs the irreversible send.
 
 ## RSS tool — `src/rssTool.ts` (DONE, tested)
 `rssServer` exposes `get_recent_funding({ hoursBack=72 })`. Server-side: fetch 8 feeds in parallel →
@@ -90,7 +92,8 @@ barrel `tools/index.ts` → `{ mcpServers, ALL_TOOL_NAMES }`.
 ## Status / TODO
 - [x] `src/tools/*` — 6 deterministic tools built, modular, tested.
 - [x] `src/agent.ts` — orchestrator + 4 subagents wired with schemas.
-- [ ] `email_send` mechanism (MCP or cron mailer on `report.md`) — only capability `task.md` needs that's missing.
+- [x] Send mechanism — `sendMessageAgent` renders a frozen Telegram template; `src/lib/telegram.ts` sends it
+  (`sendRichMessage`, `BOT_TOKEN`/`CHAT_ID` from `.env`). `report.md` is written before send. Send never throws.
 - [ ] Daily cron / scheduled trigger.
 - [ ] (Future) SQL lead store for cross-run dedup.
 
