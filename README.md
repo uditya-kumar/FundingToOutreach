@@ -136,6 +136,17 @@ cp .env.example .env
 
 Then configure one supported model provider and Telegram delivery settings.
 
+### Profile Setup
+
+Update [`src/config/profile.ts`](./src/config/profile.ts) with your personal profile:
+
+- **Edge sectors:** Industries where you have expertise or strategic advantage
+- **Skills:** Your technical skills for fit scoring
+- **Interests:** Topics that increase learning score for opportunities
+- **Anti-interests:** Sectors to filter out (e.g., crypto, gaming, hardware)
+
+This profile is used by the agent to score startup fit and design relevant proof-of-work projects.
+
 ## Supported Providers
 
 | Provider           | Required Environment Variables                                                                               |
