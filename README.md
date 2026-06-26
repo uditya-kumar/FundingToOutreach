@@ -70,7 +70,7 @@ flowchart TD
 
     O --> P[Step 6: Rank Opportunities]
     P --> Q[rank_opportunities]
-    Q --> R[rankingScore = fitScore × expectedLearning]
+    Q --> R[rankingScore = fitScore * expectedLearning]
 
     R --> S[Step 7: Render Report]
     S --> T[sendMessageAgent]
