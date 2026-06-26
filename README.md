@@ -98,7 +98,7 @@ cp .env.example .env
 npm start
 ```
 
-**Step 6:** View the generated report
+**Step 6:** View live logs (opens `log-viewer.html`)
 ```bash
 npm run view
 ```
