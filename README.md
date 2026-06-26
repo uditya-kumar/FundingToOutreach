@@ -42,48 +42,14 @@ the results, and generates a decision-focused outreach report.
 ## How It Works
 
 ```mermaid
-flowchart TD
-    A[Daily Trigger] --> B[Start Orchestrator]
-
-    B --> C[Step 1: Discover Funding News]
-    C --> C1[get_recent_funding]
-    C --> C2[get_gallery_funding]
-    C --> C3[get_india_funding]
-    C1 --> D[Candidate Startups]
-    C2 --> D
-    C3 --> D
-
-    D --> E[Step 2: Filter by Edge Sectors]
-    E --> F[funding-researcher]
-    F --> G[Candidate JSON]
-
-    G --> H[Step 3: Enrich Startup Data]
-    H --> I[fit-strategist]
-    I --> J[Founders, Links, Team Signals]
-
-    J --> K[Step 4: Score Fit]
-    K --> L[ScoredStartup JSON]
-
-    L --> M[Step 5: Design Proof of Work]
-    M --> N[pow-designer]
-    N --> O[ProofOfWork JSON]
-
-    O --> P[Step 6: Rank Opportunities]
-    P --> Q[rank_opportunities]
-    Q --> R[rankingScore = fitScore * expectedLearning]
-
-    R --> S[Step 7: Render Report]
-    S --> T[sendMessageAgent]
-    T --> U[Telegram-ready Markdown]
-
-    U --> V[Write report.md]
-    V --> W{Telegram Configured?}
-
-    W -->|Yes| X[Send Telegram Message]
-    W -->|No| Y[Keep Local Report Only]
-
-    X --> Z[Daily Ranked Outreach Report]
-    Y --> Z
+flowchart LR
+    A[Funding Sources] --> B[funding-researcher]
+    B --> C[fit-strategist]
+    C --> D[pow-designer]
+    D --> E[Rank & Score]
+    E --> F[sendMessageAgent]
+    F --> G[report.md]
+    F --> H[Telegram]
 ```
 
 ## Deterministic Tools
@@ -113,18 +79,31 @@ and makes critical operations reproducible.
 
 ## Quick Start
 
+**Step 1:** Install dependencies
 ```bash
 npm install
+```
+
+**Step 2:** Create environment file
+```bash
 cp .env.example .env
+```
+
+**Step 3:** Configure your API keys in `.env`
+
+**Step 4:** Update your profile in [`src/config/profile.ts`](./src/config/profile.ts)
+
+**Step 5:** Run the agent
+```bash
 npm start
+```
+
+**Step 6:** View the generated report
+```bash
 npm run view
 ```
 
-The default run writes the generated report to:
-
-```bash
-report.md
-```
+The report is written to [`report.md`](./report.md).
 
 ## Configuration
 
