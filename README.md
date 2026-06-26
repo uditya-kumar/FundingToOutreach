@@ -160,44 +160,7 @@ This profile is used by the agent to score startup fit and design relevant proof
 Any gateway compatible with the Anthropic Messages API format can be used through
 `ANTHROPIC_BASE_URL`.
 
-## Environment Variables
-
-```bash
-# ===========================================
-# Authentication
-# Choose one provider.
-# ===========================================
-
-# Option 1: Anthropic API
-ANTHROPIC_API_KEY=your_anthropic_api_key
-
-# Option 2: Amazon Bedrock
-# CLAUDE_CODE_USE_BEDROCK=1
-# AWS_ACCESS_KEY_ID=your_aws_access_key
-# AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-# AWS_REGION=us-east-1
-
-# Option 3: Google Vertex AI
-# CLAUDE_CODE_USE_VERTEX=1
-# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-# ANTHROPIC_VERTEX_PROJECT_ID=your_project_id
-# CLOUD_ML_REGION=us-east5
-
-# Option 4: OpenRouter
-# ANTHROPIC_BASE_URL=https://openrouter.ai/api/v1
-# ANTHROPIC_API_KEY=your_openrouter_api_key
-
-# Option 5: Custom LLM Gateway
-# ANTHROPIC_BASE_URL=https://your-gateway.example.com
-# ANTHROPIC_AUTH_TOKEN=your_gateway_token
-
-# ===========================================
-# Telegram
-# ===========================================
-
-BOT_TOKEN=your_telegram_bot_token
-CHAT_ID=your_telegram_chat_id
-```
+See [`.env.example`](./.env.example) for all environment variables.
 
 ## Project Structure
 
