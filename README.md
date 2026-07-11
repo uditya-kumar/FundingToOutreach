@@ -103,18 +103,18 @@ Then configure one supported model provider and Telegram delivery settings.
 
 ### Profile Setup
 
-Update [`src/config/profile.ts`](./src/config/profile.ts) with your personal profile:
+Two files to edit:
 
-- **Edge sectors:** Industries where you have expertise or strategic advantage
-- **Skills:** Your technical skills for fit scoring
-- **Interests:** Topics that increase learning score for opportunities
-- **Anti-interests:** Sectors to filter out (e.g., crypto, gaming, hardware)
+**1. Your profile** — [`src/config/profile.ts`](./src/config/profile.ts). Drives sector filtering and fit scoring:
 
-This profile is used by the agent to score startup fit and populate the outreach email
-templates. Edit the copy for the three skill tracks (Mobile / Web / GenAI) in the
-`EMAIL_TEMPLATES` table in [`src/config/emailTemplates.ts`](./src/config/emailTemplates.ts) —
-each track sets its own `focus`, `projects`, and `closing` text; the rest of the email is a
-shared fixed skeleton, so copy edits never touch the renderer or pipeline.
+- **Edge sectors:** industries where you have an edge
+- **Skills:** your technical skills
+- **Interests:** topics that raise the learning score
+- **Anti-interests:** sectors to filter out (crypto, gaming, hardware, …)
+
+**2. Email copy** — the `EMAIL_TEMPLATES` table in [`src/config/emailTemplates.ts`](./src/config/emailTemplates.ts).
+Each skill track (Mobile / Web / GenAI) sets its own `focus`, `projects`, and `closing` text.
+Everything else is a shared fixed skeleton, so edits stay in this one table.
 
 ## Supported Providers
 
