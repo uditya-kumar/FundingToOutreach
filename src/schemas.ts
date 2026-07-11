@@ -43,15 +43,21 @@ export const ScoredStartup = z.object({
 });
 export const ScoredList = z.object({ startups: z.array(ScoredStartup) });
 
-// ── pow-designer → orchestrator (Step 5, one per startup) ──────────────────
-export const ProofOfWork = z.object({
+// ── outreach-designer → orchestrator (Step 5, one per startup) ─────────────
+// Categorizes the startup into ONE skill track and returns ONLY the ~20%
+// personalized slots. The 80% fixed email copy lives in config/emailTemplates
+// and is filled deterministically by renderOutreach (no LLM), so the fixed body
+// never drifts or hallucinates run-to-run.
+export const Outreach = z.object({
   name: z.string(),
-  painPoints: z.array(z.string()),
-  build: z.string(), // the <48h project
-  whyItMatters: z.string(), // business impact
-  difficulty: z.number().min(0).max(10),
-  responseProbability: z.enum(["Low", "Medium", "High"]), // qualitative, for the report only — NOT used in ranking
-  outreachMessage: z.string(),
+  category: z.enum(["Mobile", "Web", "GenAI"]), // which skill track this company fits
+  founderGreeting: z.string(), // founder first name, or "there"
+  hook: z.string(), // ≤120-char company observation clause (capped in render)
+  // Company HQ location + IANA timezone so the orchestrator can compute the
+  // ideal send time (aim for the recipient's ~9 AM). Never fabricated: emit
+  // "not_found" unless a real source states the HQ location.
+  hqLocation: z.string(), // e.g. "Paris, France" or "not_found"
+  hqTimezone: z.string(), // IANA zone e.g. "Europe/Paris", or "not_found"
 });
 
 // ── Tool RETURN schemas (validate the tool→agent handover) ─────────────────
@@ -104,5 +110,5 @@ export const RunSummary = z.object({
 export const SCHEMA_TEXT = {
   candidates: `{"candidates":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"source":string,"url":string,"sector":string}]}`,
   scored: `{"startups":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"url":string,"founders":[{"name":string}],"hiringPage":string|"not_found","teamSize":string|"not_found","whyHiring":string,"whyHireCandidate":string,"fitScore":number(0.0-1.0 decimal),"expectedLearning":number(0-10)}]}`,
-  proofOfWork: `{"name":string,"painPoints":[string],"build":string,"whyItMatters":string,"difficulty":number(0-10),"responseProbability":"Low"|"Medium"|"High","outreachMessage":string}`,
+  outreach: `{"name":string,"category":"Mobile"|"Web"|"GenAI","founderGreeting":string,"hook":string,"hqLocation":string|"not_found","hqTimezone":string(IANA e.g. "Europe/Paris")|"not_found"}`,
 };

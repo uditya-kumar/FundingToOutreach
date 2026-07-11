@@ -2,16 +2,17 @@ import { writeFile } from "node:fs/promises";
 import {
   fundingResearcher,
   fitStrategist,
-  powDesigner,
-  sendMessageAgent,
+  outreachDesigner,
 } from "@/agents";
 import { mcpServers } from "@/tools";
-import { runStage, runStageText } from "@/lib/stage";
+import { runStage } from "@/lib/stage";
 import { computeRanking } from "@/lib/ranking";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { log } from "@/lib/logger";
-import { CandidateList, ScoredList, ProofOfWork } from "@/schemas";
+import { CandidateList, ScoredList, Outreach } from "@/schemas";
 import { FIRST_NAME } from "@/config/profile";
+import { renderOutreach } from "@/config/emailTemplates";
+import { computeSendWindow } from "@/lib/sendWindow";
 import { z } from "zod";
 
 // Exa web search, shared across stages that whitelist it.
@@ -24,7 +25,7 @@ const today = new Date().toISOString().slice(0, 10);
 const REPORT_PATH = new URL("../report.md", import.meta.url);
 
 type Scored = z.infer<typeof ScoredList>["startups"][number];
-type Pow = z.infer<typeof ProofOfWork>;
+type OutreachT = z.infer<typeof Outreach>;
 
 // Some days simply have no funded startups in-sector within 72h. Write a valid,
 // honest report and stop — never feed [] downstream into ranking/rendering.
@@ -81,45 +82,47 @@ async function main() {
     return;
   }
 
-  // ── Step 5: top-5 proof-of-work, ONE startup per agent, HARDCODED PARALLEL ─
+  // ── Step 5: top-5 outreach, ONE startup per agent, HARDCODED PARALLEL ─────
   // Gate on the SAME signal as the final rank (fitScore × expectedLearning) so
-  // the gate can never drop a lead the Step-6 rank would have promoted.
+  // the gate can never drop a lead the Step-6 rank would have promoted. Each
+  // agent categorizes its startup (Mobile/Web/GenAI) and returns ONLY the
+  // personalized slots — the fixed email body is filled by code (renderOutreach).
   const preScore = (s: Scored) => s.fitScore * s.expectedLearning;
   const top5 = [...startups].sort((a, b) => preScore(b) - preScore(a)).slice(0, 5);
-  log.info("pipeline", `Step 5: proof-of-work for top ${top5.length} (parallel)`);
+  log.info("pipeline", `Step 5: outreach for top ${top5.length} (parallel)`);
 
-  const powResults = await Promise.all(
+  const outreachResults = await Promise.all(
     top5.map((s) =>
-      runStage<Pow>({
-        label: `pow-designer:${s.name}`,
-        system: powDesigner.system,
-        prompt: `Design the proof-of-work for THIS startup only:\n${JSON.stringify(s)}`,
-        schema: ProofOfWork,
+      runStage<OutreachT>({
+        label: `outreach-designer:${s.name}`,
+        system: outreachDesigner.system,
+        prompt: `Categorize and personalize outreach for THIS startup only:\n${JSON.stringify(s)}`,
+        schema: Outreach,
         mcpServers: allServers,
-        allowedTools: powDesigner.allowedTools,
-        maxTurns: powDesigner.maxTurns,
+        allowedTools: outreachDesigner.allowedTools,
+        maxTurns: outreachDesigner.maxTurns,
       }).catch((e) => {
-        log.warn("pipeline", `pow-designer failed for ${s.name}: ${String(e).slice(0, 120)}`);
+        log.warn("pipeline", `outreach-designer failed for ${s.name}: ${String(e).slice(0, 120)}`);
         return null; // one failure must not sink the report (Rule 6)
       }),
     ),
   );
 
-  const pows = powResults.filter((p): p is Pow => p !== null);
-  log.info("pipeline", `Step 5: ${pows.length}/${top5.length} proof-of-work plans`);
-  log.data("pipeline", "proofOfWork", pows);
-  if (pows.length === 0) {
-    await writeNoTargets("top startups were found but proof-of-work design failed for all of them");
+  const outreaches = outreachResults.filter((o): o is OutreachT => o !== null);
+  log.info("pipeline", `Step 5: ${outreaches.length}/${top5.length} outreach drafts`);
+  log.data("pipeline", "outreach", outreaches);
+  if (outreaches.length === 0) {
+    await writeNoTargets("top startups were found but outreach design failed for all of them");
     return;
   }
 
   // ── Step 6: deterministic ranking (code, not LLM) ────────────────────────
   const byName = new Map<string, Scored>(top5.map((s) => [s.name, s]));
   const ranked = computeRanking(
-    pows.map((p) => {
-      const s = byName.get(p.name);
+    outreaches.map((o) => {
+      const s = byName.get(o.name);
       return {
-        name: p.name,
+        name: o.name,
         fitScore: s?.fitScore ?? 0,
         expectedLearning: s?.expectedLearning ?? 0,
       };
@@ -128,36 +131,59 @@ async function main() {
   log.data("pipeline", "ranking", ranked);
   log.info("pipeline", `Step 6: top — ${ranked[0]?.name} (score ${ranked[0]?.score})`);
 
-  // ── Step 7: render message → save report.md → send to Telegram ───────────
-  // Render-then-send: the agent ONLY produces the message markdown; code writes
-  // the artifact FIRST (survives a transport failure) then performs the
-  // irreversible send. Send stays in the orchestrator, not the subagent.
-  log.info("pipeline", "Step 7: rendering message");
-  const dossier = ranked.map((r) => ({
-    rank: r.rank,
-    score: r.score,
-    startup: byName.get(r.name),
-    proofOfWork: pows.find((p) => p.name === r.name),
-  }));
+  // ── Step 7: render one message per company → save report.md → send each ──
+  // Rendering is deterministic: renderOutreach fills the fixed template with the
+  // agent's personalized slots + code-supplied rank/score/funding. Each company
+  // is a SEPARATE Telegram message, sent SEQUENTIALLY best-first. The combined
+  // report.md is written FIRST so the artifact survives any transport failure.
+  const byOutreach = new Map<string, OutreachT>(outreaches.map((o) => [o.name, o]));
+  const now = new Date();
+  const messages = ranked
+    .map((r) => {
+      const o = byOutreach.get(r.name);
+      const s = byName.get(r.name);
+      if (!o) return null;
+      const funding = s
+        ? [s.fundingAmount, s.stage].filter((v) => v && v !== "not_found").join(" ") || "TBD"
+        : "TBD";
+      // Deterministic best-send-time from the company's HQ timezone (code, not
+      // LLM) — aim to land at ~9 AM local so the email tops their inbox instead
+      // of arriving after the office has emptied.
+      const { recommendation } = computeSendWindow(o.hqTimezone, now);
+      return {
+        name: r.name,
+        markdown: renderOutreach(o, {
+          rank: r.rank,
+          score: r.score,
+          startupName: r.name,
+          funding,
+          sendTimeNote: recommendation,
+        }),
+      };
+    })
+    .filter((m): m is { name: string; markdown: string } => m !== null);
 
-  const message = await runStageText({
-    label: "send-message-agent",
-    system: sendMessageAgent.system,
-    prompt: `Today is ${today}. Render the daily message from this ranked data:\n${JSON.stringify(dossier)}`,
-    allowedTools: sendMessageAgent.allowedTools,
-    maxTurns: sendMessageAgent.maxTurns,
-  });
+  // Write all messages to report.md (artifact survives transport failure).
+  const combined = messages.map((m) => m.markdown).join("\n\n---\n\n");
+  await writeFile(REPORT_PATH, combined, "utf8");
+  log.info("pipeline", `Step 7: wrote report.md (${messages.length} messages, ${Buffer.byteLength(combined)} bytes)`);
 
-  await writeFile(REPORT_PATH, message, "utf8");
-  log.info("pipeline", `Step 7: wrote report.md (${Buffer.byteLength(message)} bytes)`);
-
-  const sent = await sendTelegramMessage(message);
-  if (sent.ok) {
-    log.info("pipeline", `Step 7: sent to Telegram (status ${sent.status})`);
-  } else {
-    log.error("pipeline", `Step 7: Telegram send failed — ${sent.error}. report.md is intact.`);
+  // Send one message per company, SEQUENTIALLY, best-first. One send failing
+  // must not stop the rest — log and continue (Rule 6).
+  let sentCount = 0;
+  for (const m of messages) {
+    const sent = await sendTelegramMessage(m.markdown);
+    if (sent.ok) {
+      sentCount++;
+      log.info("pipeline", `Step 7: sent ${m.name} to Telegram (status ${sent.status})`);
+    } else {
+      log.error("pipeline", `Step 7: Telegram send failed for ${m.name} — ${sent.error}. report.md is intact.`);
+    }
   }
-  log.info("pipeline", `run done — top: ${ranked[0]?.name ?? "none"}`);
+  log.info(
+    "pipeline",
+    `run done — sent ${sentCount}/${messages.length}, top: ${ranked[0]?.name ?? "none"}`,
+  );
 }
 
 main().catch((e) => {

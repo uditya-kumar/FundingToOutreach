@@ -49,6 +49,10 @@ export const profile = {
     github: "github.com/uditya-kumar",
     linkedin: "linkedin.com/in/udityakumar",
   },
+  // Where the user is based — used to convert a company's local send-window
+  // into the user's own clock so they know when to actually hit "send".
+  timezone: "Asia/Kolkata",
+  timezoneLabel: "IST",
 } as const;
 
 export type UserProfile = typeof profile;

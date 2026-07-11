@@ -103,38 +103,3 @@ export async function runStage<T>(opts: {
   log.info(scope, "completed");
   return opts.schema.parse(data); // typed + validated at the boundary
 }
-
-/** Same as runStage but returns the raw final text (for free-form output like the email). */
-export async function runStageText(opts: {
-  system: string;
-  prompt: string;
-  allowedTools?: string[];
-  maxTurns?: number;
-  label?: string;
-}): Promise<string> {
-  const scope = opts.label ?? "stage";
-  log.info(scope, "started");
-  let text = "";
-  for await (const message of query({
-    prompt: opts.prompt,
-    options: {
-      systemPrompt: opts.system,
-      allowedTools: opts.allowedTools,
-      maxTurns: opts.maxTurns,
-      permissionMode: "bypassPermissions",
-      allowDangerouslySkipPermissions: true,
-      env: BASE_ENV,
-    } as any,
-  })) {
-    traceMessage(scope, message);
-    if (message.type === "result" && message.subtype === "success") {
-      text = (message as any).result ?? text;
-    }
-  }
-  if (!text) {
-    log.error(scope, "no text returned");
-    throw new Error(`[${scope}] no text returned`);
-  }
-  log.info(scope, "completed");
-  return text;
-}

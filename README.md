@@ -2,11 +2,12 @@
 
 <h1>Funding to Outreach</h1>
 
-<p><strong>From startup funding news to a proof-of-work outreach plan, automatically every day.</strong></p>
+<p><strong>From startup funding news to personalized outreach emails, automatically every day.</strong></p>
 
 <p>
 An autonomous daily agent that discovers recently funded startups, scores strategic fit,
-designs proof-of-work projects, and sends a ranked outreach report.
+categorizes each top company into a skill track (Mobile / Web / GenAI), and sends one
+personalized outreach email per company.
 </p>
 
 <p>
@@ -23,8 +24,11 @@ designs proof-of-work projects, and sends a ranked outreach report.
 **Funding to Outreach** is an autonomous daily research and outreach agent.
 
 It monitors recent startup funding activity, filters companies by user-relevant sectors,
-enriches each opportunity, scores strategic fit, designs a proof-of-work project, ranks
-the results, and generates a decision-focused outreach report.
+enriches each opportunity, scores strategic fit, categorizes each top company into a skill
+track (Mobile / Web / GenAI), ranks the results, and sends one personalized outreach email
+per company — an 80%-fixed / 20%-personalized template built for a software developer (it
+points to existing project proof rather than promising a fresh demo build). Each message
+also carries a deterministic best-send-time based on the company's HQ timezone.
 
 ## Key Features
 
@@ -34,9 +38,11 @@ the results, and generates a decision-focused outreach report.
 | Sector Filtering           | Filters companies by sectors where you have a strategic edge     |
 | Deep Enrichment            | Gathers founders, links, team info, and relevant public signals  |
 | Fit Scoring                | Scores each opportunity using structured fit and learning criteria |
-| Proof-of-Work Design       | Creates a sub-48-hour project idea for each selected startup     |
+| Skill-Track Categorization | Sorts each top company into Mobile / Web / GenAI to pick the right email template |
+| Personalized Outreach      | Fills a fixed 80%-template with ~20% per-company personalization (greeting + ≤120-char hook) |
+| Best-Send-Time             | Recommends when to send so the email lands ~9 AM in the company's HQ timezone |
 | Deterministic Ranking      | Ranks opportunities using reproducible scoring logic in code     |
-| Daily Report Generation    | Produces a concise outreach report for daily review              |
+| Per-Company Delivery       | Sends one Telegram message per company, sequentially, best-first  |
 | Local-First Persistence    | Writes report locally before attempting external delivery        |
 
 ## How It Works
@@ -45,11 +51,11 @@ the results, and generates a decision-focused outreach report.
 flowchart LR
     A[Funding Sources] --> B[funding-researcher]
     B --> C[fit-strategist]
-    C --> D[pow-designer]
+    C --> D["outreach-designer (×5 parallel)"]
     D --> E[Rank & Score]
-    E --> F[sendMessageAgent]
+    E --> F["renderOutreach (code)"]
     F --> G[report.md]
-    F --> H[Telegram]
+    F --> H["Telegram (1 msg / company)"]
 ```
 
 ## Deterministic Tools
@@ -124,7 +130,11 @@ Update [`src/config/profile.ts`](./src/config/profile.ts) with your personal pro
 - **Interests:** Topics that increase learning score for opportunities
 - **Anti-interests:** Sectors to filter out (e.g., crypto, gaming, hardware)
 
-This profile is used by the agent to score startup fit and design relevant proof-of-work projects.
+This profile is used by the agent to score startup fit and populate the outreach email
+templates. Edit the copy for the three skill tracks (Mobile / Web / GenAI) in the
+`EMAIL_TEMPLATES` table in [`src/config/emailTemplates.ts`](./src/config/emailTemplates.ts) —
+each track sets its own `focus`, `projects`, and `closing` text; the rest of the email is a
+shared fixed skeleton, so copy edits never touch the renderer or pipeline.
 
 ## Supported Providers
 
@@ -149,15 +159,15 @@ src/
   schemas.ts        Zod schemas for validated handoffs
   agents/           Subagent definitions
   tools/            Deterministic MCP tools
-  lib/              Ranking, logging, stage runner, and helpers
-  config/           Funding feeds and user profile configuration
+  lib/              Ranking, send-window, logging, stage runner, and helpers
+  config/           Funding feeds, user profile, and email templates
 ```
 
 ## Design Guarantees
 
 * **Schema-validated handoffs:** All inter-agent communication uses typed JSON objects.
 * **Deterministic ranking:** Opportunity ranking is computed in code, not by the model.
-* **No fabricated founder data:** LinkedIn `/in/` URLs are emitted only when found verbatim in real source results.
+* **No fabricated data:** Founder greeting falls back to "there" and HQ location/timezone to "not_found" unless grounded in a real source — names and locations are never invented.
 * **Report persistence:** `report.md` is written before any external send attempt.
 * **Graceful degradation:** Enrichment failures do not block the full report.
 * **Bounded execution:** Each subagent has a `maxTurns` limit to prevent runaway loops.
@@ -165,18 +175,15 @@ src/
 
 ## Output
 
-The agent produces a ranked Markdown report containing:
+The agent produces one outreach email per top-5 company, each containing:
 
-* Startup name and funding context.
-* Sector and relevance summary.
-* Fit score.
-* Expected learning score.
-* Deterministic ranking score.
-* Proof-of-work project idea.
-* Suggested outreach angle.
-* Useful links and public references when available.
+* A metadata header: rank, funding context, fit score, and best send time.
+* The skill track it was categorized into (Mobile / Web / GenAI).
+* A personalized greeting and a ≤120-char opening observation grounded in enrichment.
+* The fixed skill-track body (focus line, project proof, closing) and signature.
 
-The report is written to:
+Each company is sent as a separate Telegram message (sequentially, best-first). All
+messages are also written, joined by `---`, to:
 
 ```bash
 report.md
@@ -192,8 +199,8 @@ report.md
 - [ ] SQL lead store for cross-run deduplication
 - [ ] Historical opportunity tracking
 - [ ] Retry queues for failed enrichment stages
-- [ ] Richer evaluation metrics for proof-of-work quality
-- [ ] Configurable outreach templates
+- [x] Configurable outreach templates (Mobile / Web / GenAI)
+- [ ] Per-track A/B testing of outreach copy
 
 ## Contributing
 
