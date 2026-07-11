@@ -1,25 +1,10 @@
-<div align="center">
-
 <h1>Funding to Outreach</h1>
-
-<p><strong>From startup funding news to personalized outreach emails, automatically every day.</strong></p>
-
-<p>
-An autonomous daily agent that discovers recently funded startups, scores strategic fit,
-categorizes each top company into a skill track (Mobile / Web / GenAI), and sends one
-personalized outreach email per company.
-</p>
-
 <p>
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-ESM-3178C6?logo=typescript&logoColor=white">
   <img alt="Claude Agent SDK" src="https://img.shields.io/badge/Claude_Agent_SDK-0.3-D97757">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
 </p>
-
-</div>
-
-## Overview
 
 An autonomous daily agent that discovers freshly-funded startups, scores fit, and sends one
 personalized outreach email per top company. Each email is 80%-fixed / 20%-personalized,
