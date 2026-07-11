@@ -32,7 +32,8 @@ function tzAbbrev(date: Date, timeZone: string): string {
 }
 
 export type SendWindow = {
-  // Human-readable recommendation for the Telegram header.
+  // The send-time value for the Telegram header (the "Send at" label is added by
+  // the renderer). E.g. "09:00 IST ( 09:00 GMT+5:30 )" or "~9 AM their local time (HQ unknown)".
   recommendation: string;
 };
 
@@ -41,7 +42,7 @@ export type SendWindow = {
 // (e.g. "America/New_York") or "not_found" when the designer couldn't resolve it.
 export function computeSendWindow(companyTimezone: string, now: Date): SendWindow {
   if (!companyTimezone || companyTimezone === "not_found") {
-    return { recommendation: `Send at : ~9 AM their local time (HQ unknown)` };
+    return { recommendation: `~9 AM their local time (HQ unknown)` };
   }
 
   // Build the next instant that is TARGET_LOCAL_HOUR:00 in the company's zone,
@@ -50,7 +51,7 @@ export function computeSendWindow(companyTimezone: string, now: Date): SendWindo
   try {
     nowCompanyHM = wallClock(now, companyTimezone);
   } catch {
-    return { recommendation: `Send at : ~9 AM their local time (HQ unknown)` };
+    return { recommendation: `~9 AM their local time (HQ unknown)` };
   }
   const [ch, cm] = nowCompanyHM.split(":").map(Number);
   const minutesUntilTarget =
@@ -62,6 +63,6 @@ export function computeSendWindow(companyTimezone: string, now: Date): SendWindo
   const companyAbbrev = tzAbbrev(target, companyTimezone);
 
   return {
-    recommendation: `Send at : ${userClock} ${profile.timezoneLabel} ( ${companyClock} ${companyAbbrev} )`,
+    recommendation: `${userClock} ${profile.timezoneLabel} ( ${companyClock} ${companyAbbrev} )`,
   };
 }

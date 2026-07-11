@@ -158,6 +158,7 @@ async function main() {
           startupName: r.name,
           funding,
           sendTimeNote: recommendation,
+          companyUrl: o.companyUrl || s?.url || "not_found",
         }),
       };
     })

@@ -21,14 +21,9 @@ personalized outreach email per company.
 
 ## Overview
 
-**Funding to Outreach** is an autonomous daily research and outreach agent.
-
-It monitors recent startup funding activity, filters companies by user-relevant sectors,
-enriches each opportunity, scores strategic fit, categorizes each top company into a skill
-track (Mobile / Web / GenAI), ranks the results, and sends one personalized outreach email
-per company — an 80%-fixed / 20%-personalized template built for a software developer (it
-points to existing project proof rather than promising a fresh demo build). Each message
-also carries a deterministic best-send-time based on the company's HQ timezone.
+An autonomous daily agent that discovers freshly-funded startups, scores fit, and sends one
+personalized outreach email per top company. Each email is 80%-fixed / 20%-personalized,
+chosen by skill track (Mobile / Web / GenAI), and timed to the company's HQ timezone.
 
 ## Key Features
 

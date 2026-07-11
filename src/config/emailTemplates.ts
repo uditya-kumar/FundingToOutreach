@@ -61,7 +61,8 @@ export type OutreachContext = {
   score: number;
   startupName: string;
   funding: string; // e.g. "$18 Mn Seed" or "TBD"
-  sendTimeNote: string; // deterministic "best time to send" recommendation
+  sendTimeNote: string; // deterministic "best time to send" value (label added here)
+  companyUrl: string; // company page URL, or "not_found"
 };
 
 // Cap the personalized observation at OBSERVATION_MAX_CHARS. Trims whitespace and
@@ -77,9 +78,11 @@ function capObservation(raw: string): string {
 
 // The metadata header shown above every email so the user can triage at a glance.
 function header(p: OutreachPersonalization, ctx: OutreachContext): string {
+  const url = ctx.companyUrl && ctx.companyUrl !== "not_found" ? ctx.companyUrl : "TBD";
   return `# #${ctx.rank} · ${ctx.startupName} · ${p.category}
-**Funding:** ${ctx.funding}  |  **Fit score:** ${ctx.score}
-${ctx.sendTimeNote}
+**Funding:** ${ctx.funding}  |  **Fit score:** ${ctx.score}  |  **Send at:** ${ctx.sendTimeNote}
+
+**Url:-** ${url}
 
 ---`;
 }

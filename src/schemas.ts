@@ -53,6 +53,7 @@ export const Outreach = z.object({
   category: z.enum(["Mobile", "Web", "GenAI"]), // which skill track this company fits
   founderGreeting: z.string(), // founder first name, or "there"
   hook: z.string(), // ≤120-char company observation clause (capped in render)
+  companyUrl: z.string(), // company website/homepage, or "not_found" (never fabricated)
   // Company HQ location + IANA timezone so the orchestrator can compute the
   // ideal send time (aim for the recipient's ~9 AM). Never fabricated: emit
   // "not_found" unless a real source states the HQ location.
@@ -110,5 +111,5 @@ export const RunSummary = z.object({
 export const SCHEMA_TEXT = {
   candidates: `{"candidates":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"source":string,"url":string,"sector":string}]}`,
   scored: `{"startups":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"url":string,"founders":[{"name":string}],"hiringPage":string|"not_found","teamSize":string|"not_found","whyHiring":string,"whyHireCandidate":string,"fitScore":number(0.0-1.0 decimal),"expectedLearning":number(0-10)}]}`,
-  outreach: `{"name":string,"category":"Mobile"|"Web"|"GenAI","founderGreeting":string,"hook":string,"hqLocation":string|"not_found","hqTimezone":string(IANA e.g. "Europe/Paris")|"not_found"}`,
+  outreach: `{"name":string,"category":"Mobile"|"Web"|"GenAI","founderGreeting":string,"hook":string,"companyUrl":string|"not_found","hqLocation":string|"not_found","hqTimezone":string(IANA e.g. "Europe/Paris")|"not_found"}`,
 };
