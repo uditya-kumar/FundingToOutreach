@@ -8,11 +8,16 @@ const BASE_ENV = { ...process.env, ENABLE_TOOL_SEARCH: "auto" };
 
 // Trace one streamed message: an agent's reasoning text or a tool call.
 // This is what lets the log file reconstruct exactly what each stage did.
-function traceMessage(scope: string, message: any): void {
+// Returns the assistant text emitted in this message (if any) so the caller can
+// keep the last one as a parse fallback — agents often emit their final JSON as
+// a plain text block rather than via structured_output / the result field.
+function traceMessage(scope: string, message: any): string | undefined {
+  let text: string | undefined;
   if (message.type === "assistant" && message.message?.content) {
     for (const block of message.message.content) {
       if ("text" in block && block.text.trim()) {
-        log.info(scope, `reasoning: ${block.text.trim()}`);
+        text = block.text.trim();
+        log.info(scope, `reasoning: ${text}`);
       } else if ("name" in block) {
         const input = "input" in block ? JSON.stringify(block.input).slice(0, 300) : "";
         log.info(scope, `tool → ${block.name} ${input}`);
@@ -21,6 +26,7 @@ function traceMessage(scope: string, message: any): void {
   } else if (message.type === "result") {
     log.info(scope, `result: ${message.subtype}`);
   }
+  return text;
 }
 
 // Extract a JSON object/array from free-form result text. The agent sometimes
@@ -68,6 +74,7 @@ export async function runStage<T>(opts: {
   log.info(scope, "started");
   let structured: unknown;
   let resultText = "";
+  let lastAssistantText = "";
   for await (const message of query({
     prompt: opts.prompt,
     options: {
@@ -81,7 +88,8 @@ export async function runStage<T>(opts: {
       env: BASE_ENV,
     } as any,
   })) {
-    traceMessage(scope, message);
+    const text = traceMessage(scope, message);
+    if (text) lastAssistantText = text;
     if (message.type === "result" && message.subtype === "success") {
       structured = (message as any).structured_output ?? structured;
       resultText = (message as any).result ?? resultText;
@@ -92,9 +100,15 @@ export async function runStage<T>(opts: {
   // of the final text (the SDK doesn't always populate structured_output after
   // tool use). Either way we zod-parse, so the typed guarantee holds.
   let data = structured;
-  if (data === undefined && resultText) {
-    data = extractJson(resultText);
-    if (data !== undefined) log.warn(scope, "used JSON-from-text fallback (no structured_output)");
+  if (data === undefined) {
+    // The SDK's `result` field is the usual fallback, but after tool use the
+    // agent's final JSON sometimes lands only in an assistant text block and
+    // never in `result` — so try both sources.
+    const candidate = resultText || lastAssistantText;
+    if (candidate) {
+      data = extractJson(candidate);
+      if (data !== undefined) log.warn(scope, "used JSON-from-text fallback (no structured_output)");
+    }
   }
   if (data === undefined) {
     log.error(scope, "no parseable output returned");
