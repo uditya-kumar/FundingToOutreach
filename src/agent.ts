@@ -57,6 +57,7 @@ async function main() {
     schema: CandidateList,
     mcpServers: allServers,
     allowedTools: fundingResearcher.allowedTools,
+    disallowedTools: fundingResearcher.disallowedTools,
     maxTurns: fundingResearcher.maxTurns,
   });
   log.data("pipeline", "candidates", candidates);
@@ -74,6 +75,7 @@ async function main() {
     schema: ScoredList,
     mcpServers: allServers,
     allowedTools: fitStrategist.allowedTools,
+    disallowedTools: fitStrategist.disallowedTools,
     maxTurns: fitStrategist.maxTurns,
   });
   log.data("pipeline", "scored", startups);
@@ -100,6 +102,7 @@ async function main() {
         schema: Outreach,
         mcpServers: allServers,
         allowedTools: outreachDesigner.allowedTools,
+        disallowedTools: outreachDesigner.disallowedTools,
         maxTurns: outreachDesigner.maxTurns,
       }).catch((e) => {
         log.warn("pipeline", `outreach-designer failed for ${s.name}: ${String(e).slice(0, 120)}`);

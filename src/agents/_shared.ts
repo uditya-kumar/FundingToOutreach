@@ -17,8 +17,11 @@ export const jsonOnly = (schema: string) =>
   `\n\nOUTPUT: Return ONLY a single JSON object matching this exact shape — no prose, no markdown fences:\n${schema}`;
 
 // One pipeline stage: system prompt + tool whitelist + turn cap.
+// `disallowedTools` bare names are the ONLY way to actually remove a built-in
+// (e.g. Bash) under bypassPermissions — allowedTools does not gate there.
 export type StageConfig = {
   system: string;
   allowedTools: string[];
+  disallowedTools?: string[];
   maxTurns: number;
 };

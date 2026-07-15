@@ -67,6 +67,7 @@ export async function runStage<T>(opts: {
   schema: z.ZodType<T>;
   mcpServers?: McpServers;
   allowedTools?: string[];
+  disallowedTools?: string[];
   maxTurns?: number;
   label?: string;
 }): Promise<T> {
@@ -81,6 +82,11 @@ export async function runStage<T>(opts: {
       systemPrompt: opts.system,
       mcpServers: opts.mcpServers as any,
       allowedTools: opts.allowedTools,
+      // Under bypassPermissions the allowedTools whitelist is NOT a gate — every
+      // tool is auto-approved regardless. disallowedTools with a bare name is the
+      // only way to actually remove a built-in (e.g. Bash) from the agent's
+      // context so it can't burn turns on it. See agent-sdk/permissions docs.
+      disallowedTools: opts.disallowedTools,
       maxTurns: opts.maxTurns,
       permissionMode: "bypassPermissions",
       allowDangerouslySkipPermissions: true,

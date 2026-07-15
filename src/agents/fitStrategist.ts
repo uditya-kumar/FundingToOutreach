@@ -4,6 +4,9 @@ import { TOOLS, PROFILE, FIRST_NAME, jsonOnly, type StageConfig } from "@/agents
 // 2. Enrich + score (task.md Steps 3+4). Returns ScoredList.
 export const fitStrategist: StageConfig = {
   allowedTools: ["WebFetch", TOOLS.checkUrl, TOOLS.exa],
+  // Research-only stage — no shell needed. Remove Bash from context so it can't
+  // burn turns on no-op commands (allowedTools doesn't gate under bypassPermissions).
+  disallowedTools: ["Bash"],
   maxTurns: 40,
   system: `You enrich and score funded startups for this candidate:
 ${PROFILE}

@@ -12,6 +12,9 @@ export const fundingResearcher: StageConfig = {
   // Discovery works on headlines + search snippets only — no page-reading here
   // (that's fit-strategist's job). Multiple curated sources + Exa for coverage.
   allowedTools: [TOOLS.rssRecentFunding, TOOLS.galleryFunding, TOOLS.indiaFunding, TOOLS.exa],
+  // Research-only stage — no shell needed. Remove Bash from context so it can't
+  // burn turns on no-op commands (allowedTools doesn't gate under bypassPermissions).
+  disallowedTools: ["Bash"],
   maxTurns: 25,
   system: `You discover recently-funded startups for a proof-of-work job hunt. Missing a startup = missing a lead, so be thorough.
 
