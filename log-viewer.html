@@ -5,128 +5,626 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Daily Scout — Log Viewer</title>
 <style>
+  /* ---- Vercel-style LIGHT theme (default) ---- */
   :root {
-    --bg: #0d1117; --panel: #161b22; --border: #30363d; --text: #c9d1d9;
-    --muted: #8b949e; --info: #58a6ff; --warn: #d29922; --error: #f85149;
-    --data: #bc8cff; --scope: #3fb950;
+    --bg: #ffffff; --bg2: #fafafa; --panel: #fafafa; --panel2: #f2f2f2;
+    --border: #eaeaea; --border2: #f0f0f0; --text: #171717; --muted: #666666;
+    --faint: #999999;
+    --info: #0068d6; --warn: #b25000; --error: #e5484d; --data: #7c3aed;
+    --ok: #17803d; --send: #067a6e;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   }
+  /* ---- dark theme ---- */
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --bg2: #010409; --panel: #161b22; --panel2: #1c2230;
+    --border: #30363d; --border2: #21262d; --text: #e6edf3; --muted: #8b949e;
+    --faint: #6e7681;
+    --info: #58a6ff; --warn: #d29922; --error: #f85149; --data: #bc8cff;
+    --ok: #3fb950; --send: #39c5cf;
+    --shadow: none;
+  }
+  html { color-scheme: light; }
+  html[data-theme="dark"] { color-scheme: dark; }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font: 13px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace;
+    font: 13px/1.55 var(--sans);
+    -webkit-font-smoothing: antialiased;
   }
+
+  /* ---------- header ---------- */
   header {
-    position: sticky; top: 0; background: var(--panel);
-    border-bottom: 1px solid var(--border); padding: 10px 16px;
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   }
-  header h1 { font-size: 14px; margin: 0; font-weight: 600; }
-  .file { color: var(--muted); }
+  header h1 { font-size: 14px; margin: 0; font-weight: 650; letter-spacing: .2px; white-space: nowrap; }
+  .file { color: var(--muted); font: 11px/1 var(--mono); }
   .spacer { flex: 1; }
-  label { color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; }
-  .filters button {
-    background: var(--bg); color: var(--text); border: 1px solid var(--border);
-    border-radius: 5px; padding: 3px 9px; cursor: pointer; font: inherit;
+
+  .active {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 3px 10px 3px 8px; border: 1px solid var(--border);
+    border-radius: 999px; background: var(--panel);
   }
-  .filters button.off { opacity: 0.35; }
-  #clear {
-    background: var(--bg); color: var(--error); border: 1px solid var(--error);
-    border-radius: 5px; padding: 3px 9px; cursor: pointer; font: inherit;
+  .active .lbl { color: var(--muted); font-size: 11px; }
+  .agent-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text); }
+  .agent-chip .pulse {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--ok);
+    box-shadow: 0 0 0 0 currentColor; animation: pulse 1.3s infinite;
   }
-  #clear:hover { background: var(--error); color: #fff; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  #count { color: var(--muted); }
-  main { padding: 8px 16px 40px; }
-  .row { display: flex; gap: 10px; padding: 2px 0; white-space: pre-wrap; word-break: break-word; border-bottom: 1px solid #21262d33; }
-  .row .ts { color: var(--muted); flex-shrink: 0; }
-  .row .lvl { flex-shrink: 0; width: 46px; font-weight: 600; }
-  .row .scope { color: var(--scope); flex-shrink: 0; }
-  .row .msg { flex: 1; }
-  .INFO .lvl { color: var(--info); }
-  .WARN .lvl { color: var(--warn); }
-  .ERROR { background: #f8514915; }
-  .ERROR .lvl { color: var(--error); }
-  .DATA .lvl { color: var(--data); }
-  .json { color: var(--data); background: #bc8cff0d; border-left: 2px solid var(--data); padding: 4px 10px; margin: 2px 0; }
-  .hidden { display: none; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(63,185,80,.5)} 70%{box-shadow:0 0 0 6px rgba(63,185,80,0)} 100%{box-shadow:0 0 0 0 rgba(63,185,80,0)} }
+  .active.idle .dot-ok { color: var(--ok); }
+
+  input[type=search] {
+    background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 5px 10px; font: 12px var(--sans); width: 180px; outline: none;
+  }
+  input[type=search]:focus { border-color: var(--info); }
+
+  .filters { display: flex; gap: 5px; }
+  .filters button, .btn {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer; font: 500 12px var(--sans);
+    display: inline-flex; align-items: center; gap: 6px; transition: .12s;
+  }
+  .filters button:hover, .btn:hover { border-color: var(--faint); background: var(--panel2); }
+  .filters button.off { opacity: .4; }
+  .filters button .dot { width: 8px; height: 8px; border-radius: 3px; display: inline-block; }
+  label.follow { color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px; }
+  #clear { color: var(--error); border-color: color-mix(in srgb, var(--error) 40%, transparent); }
+  #clear:hover { background: var(--error); color: #fff; border-color: var(--error); }
+  .icon-btn { padding: 4px 8px; font-size: 14px; line-height: 1; }
+
+  /* ---------- layout ---------- */
+  main { max-width: 1080px; margin: 0 auto; padding: 18px 22px 80px; }
+
+  /* ---------- phase (pipeline step) ---------- */
+  .phase { margin: 0 0 6px; }
+  .phase-head {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    padding: 8px 8px; border-radius: 8px; user-select: none;
+  }
+  .phase-head:hover { background: var(--panel); }
+  .phase-head .caret { color: var(--faint); transition: transform .15s; flex-shrink: 0; }
+  .phase.collapsed .caret { transform: rotate(-90deg); }
+  .phase-head .pico {
+    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+    display: grid; place-items: center;
+    background: var(--panel2); border: 1px solid var(--border); color: var(--info);
+  }
+  .phase-title { font-weight: 650; font-size: 13px; }
+  .phase-meta { color: var(--faint); font: 11px var(--mono); }
+  .phase-body { padding: 2px 0 10px 21px; border-left: 1px solid var(--border2); margin-left: 20px; }
+  .phase.collapsed .phase-body { display: none; }
+
+  /* ---------- generic event row ---------- */
+  .ev {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 4px 8px; border-radius: 7px; position: relative;
+  }
+  .ev:hover { background: var(--panel); }
+  .ev .ico {
+    width: 20px; height: 20px; flex-shrink: 0; display: grid; place-items: center;
+    margin-top: 1px;
+  }
+  .ev .ico svg { width: 16px; height: 16px; }
+  .ev .main { flex: 1; min-width: 0; }
+  .ev .label { font-weight: 500; }
+  .ev .detail {
+    color: var(--muted); font: 11.5px/1.5 var(--mono); margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ev .detail.wrap { white-space: pre-wrap; word-break: break-word; }
+  .ev .detail.clamp {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    white-space: normal; cursor: pointer;
+  }
+  .ev.expandable .label { cursor: pointer; }
+  .ev .timing {
+    flex-shrink: 0; text-align: right; font: 11px var(--mono); color: var(--faint);
+    display: flex; flex-direction: column; align-items: flex-end; line-height: 1.35; padding-top: 2px;
+  }
+  .ev .timing .dur { color: var(--muted); display: inline-flex; align-items: center; gap: 3px; }
+  .ev .timing .dur svg { width: 11px; height: 11px; opacity: .8; }
+
+  .ev.kind-llm .ico { color: var(--data); }
+  .ev.kind-tool .ico { color: var(--info); }
+  .ev.kind-start .ico { color: var(--ok); }
+  .ev.kind-done .ico, .ev.kind-result .ico { color: var(--ok); }
+  .ev.kind-data .ico { color: var(--data); }
+  .ev.kind-telegram .ico { color: var(--send); }
+  .ev.kind-warn .ico { color: var(--warn); }
+  .ev.kind-error .ico { color: var(--error); }
+  .ev.kind-info .ico { color: var(--faint); }
+  .ev.kind-warn { background: #d2992212; }
+  .ev.kind-error { background: #f8514915; }
+
+  /* JSON handoff block */
+  .json-toggle { color: var(--data); cursor: pointer; user-select: none; font-weight: 500; }
+  .json-toggle .caret { display: inline-block; transition: transform .15s; color: var(--faint); }
+  .json-toggle.open .caret { transform: rotate(90deg); }
+  pre.json {
+    display: none; color: var(--data); background: #bc8cff0a; border: 1px solid #bc8cff26;
+    border-radius: 6px; padding: 10px 12px; margin: 6px 0 2px; overflow-x: auto;
+    font: 11.5px/1.5 var(--mono); max-height: 420px; overflow-y: auto;
+  }
+  pre.json.open { display: block; }
+
+  /* ---------- agent card ---------- */
+  .agent {
+    border: 1px solid var(--border); border-radius: 10px; margin: 6px 0;
+    background: var(--panel); overflow: hidden;
+    border-left: 3px solid var(--accent, var(--info)); box-shadow: var(--shadow);
+  }
+  .agent-head {
+    display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;
+    padding: 9px 12px;
+  }
+  .agent-head:hover { background: var(--panel2); }
+  .agent-head .caret { color: var(--faint); transition: transform .15s; flex-shrink: 0; }
+  .agent.collapsed .caret { transform: rotate(-90deg); }
+  .agent-head .aico {
+    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+    display: grid; place-items: center; color: var(--accent, var(--info));
+    background: color-mix(in srgb, var(--accent, var(--info)) 15%, transparent);
+  }
+  .agent-name { font-weight: 650; }
+  .agent-sub { font-weight: 400; color: var(--muted); }
+  .agent-meta { color: var(--faint); font: 11px var(--mono); margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .badge {
+    font: 600 10px var(--sans); padding: 2px 8px; border-radius: 999px; letter-spacing: .3px;
+    text-transform: uppercase; border: 1px solid transparent;
+  }
+  .badge.done { color: var(--ok); background: #3fb95018; border-color: #3fb95040; }
+  .badge.active { color: var(--warn); background: #d2992218; border-color: #d2992240; }
+  .badge.error { color: var(--error); background: #f8514918; border-color: #f8514940; }
+  .badge .pulse { width:6px;height:6px;border-radius:50%;background:var(--warn);display:inline-block;margin-right:4px;vertical-align:middle;animation:pulse 1.3s infinite; }
+  .agent-body { padding: 4px 10px 10px; border-top: 1px solid var(--border2); }
+  .agent.collapsed .agent-body { display: none; }
+
+  .empty { color: var(--faint); text-align: center; padding: 60px; font-size: 14px; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: #484f58; }
 </style>
 </head>
 <body>
 <header>
-  <h1>🛰️ Daily Scout Log</h1>
+  <h1>🛰️ Daily Scout</h1>
   <span class="file" id="file">…</span>
   <span class="spacer"></span>
+  <span class="active idle" id="active"></span>
+  <input type="search" id="search" placeholder="Filter events…" />
   <span class="filters" id="filters">
-    <button data-lvl="INFO"><span class="dot" style="background:var(--info)"></span> INFO</button>
-    <button data-lvl="WARN"><span class="dot" style="background:var(--warn)"></span> WARN</button>
-    <button data-lvl="ERROR"><span class="dot" style="background:var(--error)"></span> ERROR</button>
-    <button data-lvl="DATA"><span class="dot" style="background:var(--data)"></span> DATA</button>
+    <button data-kinds="llm"><span class="dot" style="background:var(--data)"></span>LLM</button>
+    <button data-kinds="tool"><span class="dot" style="background:var(--info)"></span>Tools</button>
+    <button data-kinds="data"><span class="dot" style="background:var(--data)"></span>Data</button>
+    <button data-kinds="info,start,done,result,telegram"><span class="dot" style="background:var(--faint)"></span>Info</button>
   </span>
-  <label><input type="checkbox" id="follow" checked /> auto-scroll</label>
-  <button id="clear" title="Delete all log files">🗑 Clear logs</button>
-  <span id="count"></span>
+  <label class="follow"><input type="checkbox" id="follow" checked /> follow</label>
+  <button class="btn icon-btn" id="theme" title="Toggle dark mode">🌙</button>
+  <button class="btn" id="toggleAll" title="Expand / collapse everything">⇕ Toggle all</button>
+  <button class="btn" id="clear" title="Delete all log files">🗑 Clear</button>
 </header>
 <main id="log"></main>
 
 <script>
-const off = new Set();           // hidden levels
-const logEl = document.getElementById("log");
-const fileEl = document.getElementById("file");
-const countEl = document.getElementById("count");
-const followEl = document.getElementById("follow");
+// ---------------------------------------------------------------------------
+// SVG icons (16px, stroke=currentColor). Trusted, injected via innerHTML.
+// ---------------------------------------------------------------------------
+const S = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const ICONS = {
+  brain: S('<path d="M12 5.5a3 3 0 0 0-5.5 1.7A3 3 0 0 0 4 10a3 3 0 0 0 1 2.2A3 3 0 0 0 6.5 17 3 3 0 0 0 12 18.5z"/><path d="M12 5.5a3 3 0 0 1 5.5 1.7A3 3 0 0 1 20 10a3 3 0 0 1-1 2.2A3 3 0 0 1 17.5 17 3 3 0 0 1 12 18.5z"/><path d="M12 5.5v13"/>'),
+  search:S('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'),
+  globe: S('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/>'),
+  users: S('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2A3.2 3.2 0 0 1 16 11.2"/><path d="M17.5 15c2.3.4 4 2.3 4 5"/>'),
+  puzzle:S('<path d="M10 4h4v3a2 2 0 1 0 4 0V4h2v6h-3a2 2 0 1 0 0 4h3v6h-6v-3a2 2 0 1 0-4 0v3H4v-6h3a2 2 0 1 0 0-4H4V4h6z"/>'),
+  link:  S('<path d="M9 15l6-6"/><path d="M11 6l1.5-1.5a4 4 0 0 1 5.7 5.7L16 12.5"/><path d="M13 18l-1.5 1.5a4 4 0 0 1-5.7-5.7L8 11.5"/>'),
+  db:    S('<ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/><path d="M4.5 11.5v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/>'),
+  wrench:S('<path d="M14.5 5.5a4 4 0 0 0-5.3 5.1L4 15.8 8.2 20l5.2-5.2a4 4 0 0 0 5.1-5.3l-2.6 2.6-2.5-.6-.6-2.5z"/>'),
+  play:  S('<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z" fill="currentColor" stroke="none"/>'),
+  check: S('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/>'),
+  braces:S('<path d="M8 4c-2 0-2 3-2 4s0 3-2 4c2 1 2 3 2 4s0 4 2 4"/><path d="M16 4c2 0 2 3 2 4s0 3 2 4c-2 1-2 3-2 4s0 4-2 4"/>'),
+  send:  S('<path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M21 3l-11 11"/>'),
+  alert: S('<path d="M12 3.5L21 19H3z"/><path d="M12 10v4M12 17h.01"/>'),
+  xcirc: S('<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>'),
+  flag:  S('<path d="M5 21V4M5 4h11l-1.5 3L16 10H5"/>'),
+  rocket:S('<path d="M5 15c-1 1-1 4-1 4s3 0 4-1M14 4c3-1 6 2 5 5-1 4-5 7-8 8l-4-4c1-3 4-7 7-9z"/><circle cx="14.5" cy="9.5" r="1.6"/>'),
+  clock: S('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  dot:   S('<circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>'),
+};
 
-// Level filter buttons
-document.getElementById("filters").addEventListener("click", (e) => {
-  const btn = e.target.closest("button"); if (!btn) return;
-  const lvl = btn.dataset.lvl;
-  if (off.has(lvl)) { off.delete(lvl); btn.classList.remove("off"); }
-  else { off.add(lvl); btn.classList.add("off"); }
-  applyFilter();
-});
-function applyFilter() {
-  for (const row of logEl.children) {
-    const lvl = row.dataset.lvl;
-    row.classList.toggle("hidden", lvl && off.has(lvl));
-  }
-}
-
-// Parse one raw log line into structured parts.
-// Format: "2026-... LEVEL [scope] message"
+// ---------------------------------------------------------------------------
+// Parse raw log text -> events (with attached multi-line JSON bodies).
+// ---------------------------------------------------------------------------
 const LINE = /^(\S+)\s+(INFO|WARN|ERROR|DATA)\s+\[([^\]]+)\]\s?(.*)$/;
-function render(text) {
-  logEl.innerHTML = "";
-  const lines = text.split("\n");
-  let cur = null; // current DATA block accumulating JSON
-  for (const line of lines) {
+function parse(text) {
+  const events = []; let last = null;
+  for (const line of text.split("\n")) {
     const m = line.match(LINE);
     if (m) {
-      cur = null;
-      const [, ts, lvl, scope, msg] = m;
-      const row = document.createElement("div");
-      row.className = "row " + lvl;
-      row.dataset.lvl = lvl;
-      row.innerHTML =
-        `<span class="ts">${ts.replace("T", " ").replace("Z", "")}</span>` +
-        `<span class="lvl">${lvl}</span>` +
-        `<span class="scope">${scope}</span>` +
-        `<span class="msg"></span>`;
-      row.querySelector(".msg").textContent = msg;
-      logEl.appendChild(row);
-      if (lvl === "DATA") cur = row; // following indented lines are its JSON
-    } else if (cur && line.length) {
-      // continuation line of a DATA block (the pretty JSON)
-      let pre = cur.querySelector(".json");
-      if (!pre) { pre = document.createElement("div"); pre.className = "json"; cur.after(pre); cur._json = pre; }
-      else pre = cur._json;
-      pre.textContent += (pre.textContent ? "\n" : "") + line;
+      const [, ts, level, scope, msg] = m;
+      last = { ts, tsMs: Date.parse(ts), level, scope, msg, body: "" };
+      events.push(last);
+    } else if (last && line.length) {
+      last.body += (last.body ? "\n" : "") + line;
     }
   }
-  applyFilter();
-  countEl.textContent = logEl.querySelectorAll(".row").length + " lines";
-  if (followEl.checked) window.scrollTo(0, document.body.scrollHeight);
+  // per-scope duration = gap to next event within the same scope
+  const lastByScope = {};
+  for (const ev of events) {
+    const p = lastByScope[ev.scope];
+    if (p) p.durMs = ev.tsMs - p.tsMs;
+    lastByScope[ev.scope] = ev;
+  }
+  return events;
 }
 
-// Clear all log files
+// ---------------------------------------------------------------------------
+// Classify one event -> {kind, icon, label, detail}
+// ---------------------------------------------------------------------------
+function toolLabel(name) {
+  if (name === "ToolSearch") return "Load tool schemas";
+  if (name === "WebFetch")   return "Read website content";
+  if (name === "Agent")      return "Spawn subagent";
+  if (name === "Skill")      return "Run skill";
+  if (/web_search/.test(name)) return "Search the web";
+  if (/web_fetch/.test(name))  return "Fetch web page";
+  if (/check_url/.test(name))  return "Check URL liveness";
+  if (name.startsWith("mcp__")) return name.split("__").pop();
+  return name;
+}
+function toolIcon(name) {
+  if (name === "Agent") return "users";   // spawning a subagent stays distinct
+  return "wrench";                          // every other tool call → wrench
+}
+function summarizeArgs(a) {
+  if (!a || typeof a !== "object") return "";
+  if (a.query) return a.query;
+  if (a.url) return a.url;
+  if (Array.isArray(a.urls)) return a.urls.length + " URL" + (a.urls.length > 1 ? "s" : "");
+  if (a.skill) return a.skill + (a.args ? " — " + a.args : "");
+  if (a.prompt) return a.prompt;
+  if (a.hoursBack) return "last " + a.hoursBack + "h" + (a.numResults ? ", " + a.numResults + " results" : "");
+  if (a.numResults) return a.numResults + " results";
+  const k = Object.keys(a);
+  return k.length ? JSON.stringify(a) : "";
+}
+function classify(ev) {
+  const m = ev.msg;
+  const isAgent = ev.scope !== "pipeline" && ev.scope !== "logger";
+
+  if (ev.level === "DATA")  return { kind: "data",  icon: "braces", label: m.replace(/:$/, ""), json: ev.body };
+  if (ev.level === "ERROR") return { kind: "error", icon: "xcirc",  label: m };
+  if (ev.level === "WARN")  return { kind: "warn",  icon: "alert",  label: m };
+
+  if (isAgent) {
+    if (/^started$/.test(m))   return { kind: "start",  icon: "play",  label: "Started" };
+    if (/^completed$/.test(m)) return { kind: "done",   icon: "check", label: "Completed" };
+    if (/^result:/.test(m))    return { kind: "result", icon: "check", label: "Result", detail: m.replace(/^result:\s*/, "") };
+    if (/^reasoning:/.test(m)) return { kind: "llm",    icon: "brain", label: "LLM call", detail: m.replace(/^reasoning:\s*/, ""), long: true };
+    const t = m.match(/^tool → (\S+)\s*(\{[\s\S]*\})?$/);
+    if (t) {
+      let args = null; try { if (t[2]) args = JSON.parse(t[2]); } catch {}
+      return { kind: "tool", icon: toolIcon(t[1]), label: toolLabel(t[1]), detail: summarizeArgs(args) || (t[2] ? t[2] : "") };
+    }
+    return { kind: "info", icon: "dot", label: m };
+  }
+
+  // pipeline / logger
+  if (/Telegram/.test(m))    return { kind: "telegram", icon: "send",  label: m };
+  if (/^run done/.test(m))   return { kind: "done",     icon: "check", label: m };
+  if (/^run start/.test(m))  return { kind: "start",    icon: "rocket",label: m };
+  if (/wrote report/.test(m))return { kind: "info",     icon: "braces",label: m };
+  return { kind: "info", icon: "dot", label: m };
+}
+
+// ---------------------------------------------------------------------------
+// Build model: phases (pipeline steps) with pipeline events + nested agents.
+// ---------------------------------------------------------------------------
+function stepKey(msg) {
+  if (/^run start/.test(msg)) return "run";
+  const m = msg.match(/^(Step [0-9+]+)/);
+  return m ? m[1] : null;
+}
+const AGENT_ACCENTS = ["#58a6ff", "#3fb950", "#bc8cff", "#f778ba", "#e3b341", "#39c5cf", "#ff7b72", "#a5d6ff"];
+function build(events) {
+  const runStart = events.length ? events[0].tsMs : 0;
+  const phases = []; const groups = new Map();
+  let phase = null, curKey = null, accentIdx = 0;
+  const newPhase = (title, ev) => { phase = { title, tsMs: ev.tsMs, items: [] }; phases.push(phase); };
+
+  for (const ev of events) {
+    const isAgent = ev.scope !== "pipeline" && ev.scope !== "logger";
+    if (!isAgent) {
+      const key = stepKey(ev.msg);
+      if (key && key !== curKey) { curKey = key; newPhase(ev.msg, ev); }
+      if (!phase) newPhase("Session", ev);
+      phase.items.push({ type: "event", ev });
+    } else {
+      let g = groups.get(ev.scope);
+      if (!g) {
+        g = { scope: ev.scope, events: [], start: ev.tsMs, end: ev.tsMs, status: "active",
+              tools: 0, llm: 0, accent: AGENT_ACCENTS[accentIdx++ % AGENT_ACCENTS.length] };
+        groups.set(ev.scope, g);
+        if (!phase) newPhase("Session", ev);
+        phase.items.push({ type: "agent", group: g });
+      }
+      g.events.push(ev); g.end = ev.tsMs;
+      const c = classify(ev);
+      if (c.kind === "tool") g.tools++;
+      if (c.kind === "llm")  g.llm++;
+      if (/^completed$/.test(ev.msg)) g.status = "done";
+      if (ev.level === "ERROR") g.status = "error";
+    }
+  }
+  const active = [...groups.values()].filter(g => g.status === "active");
+  return { phases, groups, runStart, active };
+}
+
+// ---------------------------------------------------------------------------
+// Formatting
+// ---------------------------------------------------------------------------
+function fmtDur(ms) {
+  if (ms == null || isNaN(ms)) return "";
+  if (ms < 1000) return Math.round(ms) + "ms";
+  if (ms < 60000) return (ms / 1000).toFixed(1) + "s";
+  const m = Math.floor(ms / 60000), s = Math.round((ms % 60000) / 1000);
+  return m + "m " + s + "s";
+}
+const fmtOff = (ms) => "+" + (ms / 1000).toFixed(2) + "s";
+
+// ---------------------------------------------------------------------------
+// DOM helper
+// ---------------------------------------------------------------------------
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    const v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "html") el.innerHTML = v;             // trusted SVG only
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v);
+  }
+  for (const kid of kids) {
+    if (kid == null || kid === false) continue;
+    el.append(kid.nodeType ? kid : document.createTextNode(kid));
+  }
+  return el;
+}
+
+// persisted collapse state (survives 1.5s live re-render)
+const collapsedPhases = new Set();
+const collapsedGroups = new Set();
+const seenGroups = new Set();     // scopes we've rendered before (collapse new ones once)
+const openJson = new Set();
+const expandedText = new Set();
+
+// ---------------------------------------------------------------------------
+// Render an event row
+// ---------------------------------------------------------------------------
+let evSeq = 0;
+function renderEvent(ev, runStart) {
+  const c = classify(ev);
+  const row = h("div", { class: "ev kind-" + c.kind, "data-kind": c.kind });
+
+  row.append(h("span", { class: "ico", html: ICONS[c.icon] || ICONS.dot }));
+
+  const main = h("div", { class: "main" });
+  const label = h("div", { class: "label" }, c.label);
+  main.append(label);
+
+  if (c.detail) {
+    const key = "t" + (evSeq++);
+    const det = h("div", { class: "detail" + (c.long ? " clamp" : "") }, c.detail);
+    if (c.long) {
+      if (expandedText.has(key)) det.classList.remove("clamp");
+      det.addEventListener("click", () => {
+        det.classList.toggle("clamp");
+        det.classList.contains("clamp") ? expandedText.delete(key) : expandedText.add(key);
+      });
+    }
+    main.append(det);
+  }
+
+  if (c.kind === "data" && c.json) {
+    const jkey = ev.scope + "|" + ev.tsMs + "|" + c.label;
+    const open = openJson.has(jkey);
+    const pre = h("pre", { class: "json" + (open ? " open" : "") }, c.json);
+    const toggle = h("span", { class: "json-toggle" + (open ? " open" : "") },
+      h("span", { class: "caret" }, "▸"), " view JSON");
+    toggle.addEventListener("click", () => {
+      const now = pre.classList.toggle("open");
+      toggle.classList.toggle("open", now);
+      now ? openJson.add(jkey) : openJson.delete(jkey);
+    });
+    label.append(document.createTextNode("  "), toggle);
+    main.append(pre);
+  }
+
+  row.append(main);
+
+  const timing = h("div", { class: "timing" });
+  if ((c.kind === "tool" || c.kind === "llm") && ev.durMs != null) {
+    timing.append(h("span", { class: "dur", html: ICONS.clock + " " + fmtDur(ev.durMs) }));
+  }
+  timing.append(h("span", { class: "off" }, fmtOff(ev.tsMs - runStart)));
+  row.append(timing);
+  return row;
+}
+
+// ---------------------------------------------------------------------------
+// Render an agent card
+// ---------------------------------------------------------------------------
+function agentIcon(scope) {
+  if (scope.startsWith("outreach")) return "send";
+  if (scope.startsWith("fit"))      return "check";
+  if (scope.startsWith("funding"))  return "db";
+  return "users";
+}
+function agentName(scope) {
+  const [base, sub] = scope.split(":");
+  const title = base.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  return { title, sub };
+}
+function renderAgent(g, runStart) {
+  // subagents start collapsed for a compact overview; collapse each new one once
+  if (!seenGroups.has(g.scope)) { seenGroups.add(g.scope); collapsedGroups.add(g.scope); }
+  const collapsed = collapsedGroups.has(g.scope);
+  const card = h("div", { class: "agent" + (collapsed ? " collapsed" : "") });
+  card.style.setProperty("--accent", g.accent);
+
+  const { title, sub } = agentName(g.scope);
+  const badge = g.status === "done"
+    ? h("span", { class: "badge done" }, "done")
+    : g.status === "error"
+    ? h("span", { class: "badge error" }, "error")
+    : h("span", { class: "badge active", html: '<span class="pulse"></span>running' });
+
+  const meta = h("div", { class: "agent-meta" },
+    fmtDur(g.end - g.start),
+    h("span", {}, g.tools + " tools"),
+    h("span", {}, g.llm + " LLM"),
+    badge);
+
+  const head = h("div", { class: "agent-head" },
+    h("span", { class: "caret", html: ICONS.flag ? "▾" : "▾" }),
+    h("span", { class: "aico", html: ICONS[agentIcon(g.scope)] }),
+    h("span", { class: "agent-name" }, title,
+      sub ? h("span", { class: "agent-sub" }, "  ·  " + sub) : null),
+    meta);
+  head.querySelector(".caret").textContent = "▾";
+  head.addEventListener("click", () => {
+    const now = card.classList.toggle("collapsed");
+    now ? collapsedGroups.add(g.scope) : collapsedGroups.delete(g.scope);
+  });
+
+  const body = h("div", { class: "agent-body" });
+  for (const ev of g.events) body.append(renderEvent(ev, runStart));
+
+  card.append(head, body);
+  return card;
+}
+
+// ---------------------------------------------------------------------------
+// Render everything
+// ---------------------------------------------------------------------------
+const logEl = document.getElementById("log");
+const fileEl = document.getElementById("file");
+const activeEl = document.getElementById("active");
+const followEl = document.getElementById("follow");
+const searchEl = document.getElementById("search");
+const offKinds = new Set();
+let lastScopes = [];      // all agent scopes seen (for toggle-all)
+let lastPhaseCount = 0;
+let lastText = null;      // skip re-render when the log is unchanged
+
+function render(text) {
+  if (text === lastText) return;   // nothing new → keep DOM + scroll intact
+  lastText = text;
+  evSeq = 0;
+  const events = parse(text);
+  const model = build(events);
+  lastScopes = [...model.groups.keys()];
+  lastPhaseCount = model.phases.length;
+
+  // active-agents strip
+  activeEl.innerHTML = "";
+  if (model.active.length) {
+    activeEl.classList.remove("idle");
+    activeEl.append(h("span", { class: "lbl" }, model.active.length + " active"));
+    for (const g of model.active) {
+      const { title, sub } = agentName(g.scope);
+      activeEl.append(h("span", { class: "agent-chip" },
+        h("span", { class: "pulse" }), sub || title));
+    }
+  } else {
+    activeEl.classList.add("idle");
+    activeEl.append(h("span", { class: "lbl", html: '<span style="color:var(--ok)">●</span>&nbsp; idle' }));
+  }
+
+  const scrollY = window.scrollY;
+  logEl.innerHTML = "";
+
+  if (!events.length) {
+    logEl.append(h("div", { class: "empty" }, "No log data yet — waiting for a run…"));
+    return;
+  }
+
+  model.phases.forEach((ph, i) => {
+    const collapsed = collapsedPhases.has(i);
+    const wrap = h("div", { class: "phase" + (collapsed ? " collapsed" : "") });
+    const agents = ph.items.filter(it => it.type === "agent").length;
+    const evs = ph.items.filter(it => it.type === "event").length;
+    const metaParts = [];
+    if (agents) metaParts.push(agents + " agent" + (agents > 1 ? "s" : ""));
+    if (evs) metaParts.push(evs + " event" + (evs > 1 ? "s" : ""));
+
+    const head = h("div", { class: "phase-head" },
+      h("span", { class: "caret" }, "▾"),
+      h("span", { class: "pico", html: ICONS.flag }),
+      h("span", { class: "phase-title" }, ph.title),
+      h("span", { class: "phase-meta" }, fmtOff(ph.tsMs - model.runStart) + (metaParts.length ? "  ·  " + metaParts.join("  ·  ") : "")));
+    head.addEventListener("click", () => {
+      const now = wrap.classList.toggle("collapsed");
+      now ? collapsedPhases.add(i) : collapsedPhases.delete(i);
+    });
+
+    const body = h("div", { class: "phase-body" });
+    for (const it of ph.items) {
+      body.append(it.type === "agent" ? renderAgent(it.group, model.runStart)
+                                      : renderEvent(it.ev, model.runStart));
+    }
+    wrap.append(head, body);
+    logEl.append(wrap);
+  });
+
+  applyFilter();
+  if (followEl.checked) window.scrollTo(0, document.body.scrollHeight);
+  else window.scrollTo(0, scrollY);
+}
+
+// ---------------------------------------------------------------------------
+// Filters + search
+// ---------------------------------------------------------------------------
+function applyFilter() {
+  const q = searchEl.value.trim().toLowerCase();
+  for (const row of logEl.querySelectorAll(".ev")) {
+    const kindHidden = offKinds.has(row.dataset.kind);
+    const textHidden = q && !row.textContent.toLowerCase().includes(q);
+    row.style.display = (kindHidden || textHidden) ? "none" : "";
+  }
+}
+document.getElementById("filters").addEventListener("click", (e) => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  const kinds = btn.dataset.kinds.split(",");
+  const isOff = kinds.every(k => offKinds.has(k));
+  kinds.forEach(k => isOff ? offKinds.delete(k) : offKinds.add(k));
+  btn.classList.toggle("off", !isOff);
+  applyFilter();
+});
+searchEl.addEventListener("input", applyFilter);
+
+let allCollapsed = false;
+document.getElementById("toggleAll").addEventListener("click", () => {
+  allCollapsed = !allCollapsed;
+  collapsedPhases.clear(); collapsedGroups.clear();
+  if (allCollapsed) {
+    lastPhaseCount = document.querySelectorAll(".phase").length;
+    for (let i = 0; i < lastPhaseCount; i++) collapsedPhases.add(i);
+    lastScopes.forEach(s => collapsedGroups.add(s));
+  }
+  document.querySelectorAll(".phase, .agent").forEach(el => el.classList.toggle("collapsed", allCollapsed));
+});
+
+// ---------------------------------------------------------------------------
+// Clear logs
+// ---------------------------------------------------------------------------
 document.getElementById("clear").addEventListener("click", async () => {
   if (!confirm("Delete ALL log files? This cannot be undone.")) return;
   try {
@@ -134,12 +632,28 @@ document.getElementById("clear").addEventListener("click", async () => {
     const { removed } = await res.json();
     fileEl.textContent = `(cleared ${removed} log file${removed === 1 ? "" : "s"})`;
     logEl.innerHTML = "";
-    countEl.textContent = "0 lines";
-  } catch {
-    alert("Clear failed — is the viewer server running?");
-  }
+  } catch { alert("Clear failed — is the viewer server running?"); }
 });
 
+// ---------------------------------------------------------------------------
+// Theme toggle (light default, persisted)
+// ---------------------------------------------------------------------------
+const themeBtn = document.getElementById("theme");
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
+  themeBtn.title = t === "dark" ? "Switch to light mode" : "Switch to dark mode";
+}
+applyTheme(localStorage.getItem("scout-theme") || "light");
+themeBtn.addEventListener("click", () => {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  localStorage.setItem("scout-theme", next);
+  applyTheme(next);
+});
+
+// ---------------------------------------------------------------------------
+// Poll
+// ---------------------------------------------------------------------------
 async function poll() {
   try {
     const res = await fetch("/log");
@@ -148,7 +662,7 @@ async function poll() {
   } catch { fileEl.textContent = "(server not reachable)"; }
 }
 poll();
-setInterval(poll, 1500); // live refresh
+setInterval(poll, 1500);
 </script>
 </body>
 </html>
