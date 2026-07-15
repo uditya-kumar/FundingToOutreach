@@ -9,7 +9,7 @@ import { runStage } from "@/lib/stage";
 import { computeRanking } from "@/lib/ranking";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { log } from "@/lib/logger";
-import { CandidateList, ScoredList, Outreach } from "@/schemas";
+import { CandidateList, ScoredStartup, Outreach } from "@/schemas";
 import { FIRST_NAME } from "@/config/profile";
 import { renderOutreach } from "@/config/emailTemplates";
 import { computeSendWindow } from "@/lib/sendWindow";
@@ -24,7 +24,7 @@ const allServers = {
 const today = new Date().toISOString().slice(0, 10);
 const REPORT_PATH = new URL("../report.md", import.meta.url);
 
-type Scored = z.infer<typeof ScoredList>["startups"][number];
+type Scored = z.infer<typeof ScoredStartup>;
 type OutreachT = z.infer<typeof Outreach>;
 
 // Some days simply have no funded startups in-sector within 72h. Write a valid,
@@ -66,19 +66,31 @@ async function main() {
     return;
   }
 
-  // ── Step 3+4: enrich + score ─────────────────────────────────────────────
-  log.info("pipeline", "Step 3+4: enriching + scoring");
-  const { startups } = await runStage({
-    label: "fit-strategist",
-    system: fitStrategist.system,
-    prompt: `Enrich and score these candidates:\n${JSON.stringify(candidates)}`,
-    schema: ScoredList,
-    mcpServers: allServers,
-    allowedTools: fitStrategist.allowedTools,
-    disallowedTools: fitStrategist.disallowedTools,
-    maxTurns: fitStrategist.maxTurns,
-  });
+  // ── Step 3+4: enrich + score, ONE candidate per agent, HARDCODED PARALLEL ─
+  // Mirrors Step 5: each candidate gets its own fit-strategist instance so
+  // enrichment/scoring fan out concurrently instead of one agent grinding the
+  // whole list serially. One failure must not sink the batch (Rule 6).
+  log.info("pipeline", `Step 3+4: enriching + scoring ${candidates.length} candidates (parallel)`);
+  const scoredResults = await Promise.all(
+    candidates.map((c) =>
+      runStage<Scored>({
+        label: `fit-strategist:${c.name}`,
+        system: fitStrategist.system,
+        prompt: `Enrich and score THIS candidate only:\n${JSON.stringify(c)}`,
+        schema: ScoredStartup,
+        mcpServers: allServers,
+        allowedTools: fitStrategist.allowedTools,
+        disallowedTools: fitStrategist.disallowedTools,
+        maxTurns: fitStrategist.maxTurns,
+      }).catch((e) => {
+        log.warn("pipeline", `fit-strategist failed for ${c.name}: ${String(e).slice(0, 120)}`);
+        return null; // one failure must not sink the batch (Rule 6)
+      }),
+    ),
+  );
+  const startups = scoredResults.filter((s): s is Scored => s !== null);
   log.data("pipeline", "scored", startups);
+  log.info("pipeline", `Step 3+4: ${startups.length}/${candidates.length} scored`);
   if (startups.length === 0) {
     await writeNoTargets("candidates were found but none survived enrichment/scoring");
     return;

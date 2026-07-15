@@ -274,7 +274,6 @@ function toolLabel(name) {
   if (name === "Skill")      return "Run skill";
   if (/web_search/.test(name)) return "Search the web";
   if (/web_fetch/.test(name))  return "Fetch web page";
-  if (/check_url/.test(name))  return "Check URL liveness";
   if (name.startsWith("mcp__")) return name.split("__").pop();
   return name;
 }

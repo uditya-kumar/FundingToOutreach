@@ -71,16 +71,6 @@ export const FeedItem = z.object({
 });
 export const FeedItemList = z.array(FeedItem);
 
-// check_url → array of liveness results
-export const CheckResult = z.object({
-  url: z.string(),
-  status: z.union([z.number(), z.string()]),
-  ok: z.boolean(),
-  finalUrl: z.string().optional(),
-  error: z.string().optional(),
-});
-export const CheckResultList = z.array(CheckResult);
-
 // rank_opportunities → ranked opportunities with computed score
 export const RankedOpportunity = z.object({
   rank: z.number(),
@@ -111,5 +101,8 @@ export const RunSummary = z.object({
 export const SCHEMA_TEXT = {
   candidates: `{"candidates":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"source":string,"url":string,"sector":string}]}`,
   scored: `{"startups":[{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"url":string,"founders":[{"name":string}],"hiringPage":string|"not_found","teamSize":string|"not_found","whyHiring":string,"whyHireCandidate":string,"fitScore":number(0.0-1.0 decimal),"expectedLearning":number(0-10)}]}`,
+  // Single-startup form of `scored` — the fit-strategist runs ONE instance per
+  // candidate in parallel (mirrors outreach-designer), so each returns one object.
+  scoredOne: `{"name":string,"oneLiner":string,"fundingAmount":string,"stage":string,"date":string,"url":string,"founders":[{"name":string}],"hiringPage":string|"not_found","teamSize":string|"not_found","whyHiring":string,"whyHireCandidate":string,"fitScore":number(0.0-1.0 decimal),"expectedLearning":number(0-10)}`,
   outreach: `{"name":string,"category":"Mobile"|"Web"|"GenAI","founderGreeting":string,"hook":string,"companyUrl":string|"not_found","hqLocation":string|"not_found","hqTimezone":string(IANA e.g. "Europe/Paris")|"not_found"}`,
 };

@@ -14,7 +14,7 @@ Each stage is a self-contained `query()` call with schema-validated JSON handoff
 | Subagent | Steps | Tools | Returns |
 |---|---|---|---|
 | `funding-researcher` | 1+2 | `get_recent_funding`, `get_gallery_funding`, `get_india_funding`, Exa | `Candidate[]` |
-| `fit-strategist` | 3+4 | Exa, `check_url` | `ScoredStartup[]` |
+| `fit-strategist` | 3+4 | Exa, WebFetch | `ScoredStartup[]` |
 | `outreach-designer` | 5 | Exa, WebFetch | `Outreach` (one instance per top-5 startup, parallel) — categorizes into Mobile/Web/GenAI, returns the ~20% personalized slots + the company's HQ location/timezone |
 
 **Orchestrator-only steps:**
@@ -31,7 +31,6 @@ Three FIXED templates, one per skill track (Mobile / Web / GenAI), each with the
 | `funding-feeds` | `get_recent_funding` | RSS sweep → compact JSON |
 | `startups-gallery` | `get_gallery_funding` | Scrapes startups.gallery/news |
 | `ipo-platform` | `get_india_funding` | Scrapes ipoplatform.com (India) |
-| `link-tools` | `check_url` | HTTP liveness for public URLs |
 | `ranking-tools` | `rank_opportunities` | Step 6 math |
 
 ## Key rules

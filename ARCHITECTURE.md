@@ -48,7 +48,7 @@ Rendering is deterministic: all three tracks share one skeleton, and the per-tra
 | Stage | Tools |
 |---|---|
 | funding-researcher | `get_recent_funding`, `get_gallery_funding`, `get_india_funding`, Exa |
-| fit-strategist | Exa, `check_url` |
+| fit-strategist | Exa, WebFetch |
 | outreach-designer | Exa, WebFetch |
 | orchestrator | `computeRanking()`, `computeSendWindow()`, `renderOutreach()`, `sendTelegramMessage()`, `writeFile()` |
 

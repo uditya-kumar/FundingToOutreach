@@ -8,12 +8,25 @@ import { TOOLS, PROFILE, jsonOnly, type StageConfig } from "@/agents/_shared";
 // the startup into ONE skill track and (b) produces the ~20% personalized slots.
 export const outreachDesigner: StageConfig = {
   allowedTools: ["WebFetch", TOOLS.exa],
-  // Remove Bash from context entirely — this stage only researches and returns
-  // JSON, and previously burned its whole turn budget on no-op `Bash true` /
-  // `wc -c` calls until it hit maxTurns. (allowedTools alone can't block it
-  // under bypassPermissions.)
-  disallowedTools: ["Bash"],
-  maxTurns: 20,
+  // Research-only stage — same idle-spin problem as fit-strategist: once it has
+  // its answer it reaches for whatever tool is still available to burn turns
+  // (no-op Bash, empty AskUserQuestion, junk Grep/Glob/Skill/Agent, task
+  // tracking). Block them all (allowedTools alone can't gate under
+  // bypassPermissions). Kept in sync with fit-strategist's list. disallowedTools
+  // is applied at the query() level in runStage, so this also blocks any
+  // sub-agent this stage spawns.
+  disallowedTools: [
+    "Bash",
+    "Read",
+    "AskUserQuestion",
+    "Agent",
+    "Skill",
+    "Grep",
+    "Glob",
+    "TaskCreate",
+    "TaskList",
+  ],
+  maxTurns: 30,
   system: `You prepare a personalized cold-outreach for ONE startup (its data is in the prompt) on behalf of:
 ${PROFILE}
 

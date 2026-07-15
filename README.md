@@ -49,7 +49,6 @@ and makes critical operations reproducible.
 | `get_recent_funding`  | `funding-feeds`    | Fetches funding RSS feeds, filters by date, applies keyword filters, deduplicates results, and returns compact JSON. |
 | `get_gallery_funding` | `startups-gallery` | Scrapes `startups.gallery/news` and extracts funding announcements.                                                  |
 | `get_india_funding`   | `ipo-platform`     | Scrapes Indian startup funding data from `ipoplatform.com`.                                                          |
-| `check_url`           | `link-tools`       | Checks whether public URLs such as careers or hiring pages are live.                                                 |
 | `rank_opportunities`  | `ranking-tools`    | Computes deterministic opportunity rankings.                                                                         |
 
 ## Tech Stack
