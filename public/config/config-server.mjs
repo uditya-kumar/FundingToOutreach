@@ -12,14 +12,15 @@ import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url)); // public/config
+const ROOT = join(HERE, "..", ".."); // project root
 const PORT = Number(process.env.CONFIG_PORT) || 4321;
 
 const PROFILE_JSON = join(ROOT, "src/config/profile.data.json");
 const FEEDS_JSON = join(ROOT, "src/config/feeds.data.json");
 const TEMPLATES_JSON = join(ROOT, "src/config/emailTemplates.data.json");
 const ENV_PATH = join(ROOT, ".env");
-const UI_PATH = join(ROOT, "config-ui.html");
+const UI_PATH = join(HERE, "config-ui.html"); // sibling of this server
 
 const readJson = async (p) => JSON.parse(await readFile(p, "utf8"));
 

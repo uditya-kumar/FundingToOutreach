@@ -6,7 +6,8 @@ import { readFile, readdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const PORT = 4500;
-const LOGS_DIR = new URL("./logs/", import.meta.url);
+// This server lives in public/logging; logs/ is at the project root (two levels up).
+const LOGS_DIR = new URL("../../logs/", import.meta.url);
 const HTML = fileURLToPath(new URL("./log-viewer.html", import.meta.url));
 
 async function clearLogs() {

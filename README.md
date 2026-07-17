@@ -137,8 +137,9 @@ See [`.env.example`](./.env.example) for all environment variables.
 ## Project Structure
 
 ```text
-config-server.mjs   Local config editor server (npm run config)
-config-ui.html      Single-page config editor UI
+public/
+  config/           Config editor server + UI (npm run config)
+  logging/          Live log viewer server + UI (npm run view)
 src/
   agent.ts          Main orchestrator pipeline
   schemas.ts        Zod schemas for validated handoffs

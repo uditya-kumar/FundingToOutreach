@@ -8,8 +8,8 @@
   "main": "src/agent.ts",
   "scripts": {
     "start": "npx tsx --env-file=.env src/agent.ts",
-    "config": "node config-server.mjs",
-    "view": "node log-viewer.mjs"
+    "config": "node public/config/config-server.mjs",
+    "view": "node public/logging/log-viewer.mjs"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.31.0",
