@@ -66,56 +66,37 @@ and makes critical operations reproducible.
 
 ## Quick Start
 
-**Step 1:** Install dependencies
 ```bash
-npm install
+npm install         # 1. install dependencies
+npm run config      # 2. open the visual config editor at localhost:4321
+npm start           # 3. run the agent
+npm run view        # 4. (optional) view live logs
 ```
 
-**Step 2:** Create environment file
-```bash
-cp .env.example .env
-```
+Everything is configured in the **config editor** (`npm run config`) — no code editing
+required. It opens a single-page UI with four tabs:
 
-**Step 3:** Configure your API keys in `.env`
+- **Profile** — your name, summary, timezone, links, and the sector/role lists that drive
+  filtering and fit scoring.
+- **Funding Feeds** — the RSS sources swept for funding news.
+- **Email Templates** — the full outreach email per skill track (Mobile / Web / GenAI),
+  edited directly with `{tokens}` filled in per company.
+- **Credentials** — your `.env` keys as editable `KEY = value` rows (model provider,
+  Telegram, Google Sheets). Creates `.env` if it doesn't exist yet.
 
-**Step 4:** Update your profile in [`src/config/profile.ts`](./src/config/profile.ts)
-
-**Step 5:** Run the agent
-```bash
-npm start
-```
-
-**Step 6:** View live logs (opens `log-viewer.html`)
-```bash
-npm run view
-```
-
-The report is written to [`report.md`](./report.md).
+Saving writes straight to disk (`src/config/*.data.json` and `.env`). Restart `npm start`
+to pick up changes. The report is written to [`report.md`](./report.md).
 
 ## Configuration
 
-Create a `.env` file from the example file:
+Run `npm run config` and fill in the tabs above. At minimum you need:
 
-```bash
-cp .env.example .env
-```
+- One **model provider** (e.g. `ANTHROPIC_API_KEY`) — see [Supported Providers](#supported-providers).
+- **Telegram** delivery: `BOT_TOKEN` and `CHAT_ID`.
+- Optionally **Google Sheets** cross-run dedup: `SHEETS_API_KEY` and `SHEET_ID` (below).
 
-Then configure one supported model provider and Telegram delivery settings.
-
-### Profile Setup
-
-Two files to edit:
-
-**1. Your profile** — [`src/config/profile.ts`](./src/config/profile.ts). Drives sector filtering and fit scoring:
-
-- **Edge sectors:** industries where you have an edge
-- **Skills:** your technical skills
-- **Interests:** topics that raise the learning score
-- **Anti-interests:** sectors to filter out (crypto, gaming, hardware, …)
-
-**2. Email copy** — the `EMAIL_TEMPLATES` table in [`src/config/emailTemplates.ts`](./src/config/emailTemplates.ts).
-Each skill track (Mobile / Web / GenAI) sets its own `focus`, `projects`, and `closing` text.
-Everything else is a shared fixed skeleton, so edits stay in this one table.
+> Prefer editing files directly? The same values live in `src/config/*.data.json` and
+> `.env`; the config UI just edits those for you.
 
 ### Contacted-Companies Sheet (cross-run dedup)
 
@@ -131,11 +112,9 @@ A startup is excluded if **either** its name **or** its root domain matches a ro
 1. In Google Cloud, enable the **Google Sheets API** and create an **API key**
    (restrict it to the Sheets API). No billing account is needed — reads are free.
 2. Share the sheet as **"Anyone with the link → Viewer"**.
-3. Add to `.env`:
-   ```
-   SHEETS_API_KEY=your_key_here
-   SHEET_ID=your_sheet_id_here   # the ID in docs.google.com/spreadsheets/d/<SHEET_ID>/edit
-   ```
+3. In the config editor's **Credentials** tab (or directly in `.env`), set:
+   - `SHEETS_API_KEY` — your API key
+   - `SHEET_ID` — the ID in `docs.google.com/spreadsheets/d/<SHEET_ID>/edit`
 
 If these are unset or the fetch fails, dedup is skipped gracefully (the run contacts
 everyone) rather than erroring.
@@ -158,13 +137,15 @@ See [`.env.example`](./.env.example) for all environment variables.
 ## Project Structure
 
 ```text
+config-server.mjs   Local config editor server (npm run config)
+config-ui.html      Single-page config editor UI
 src/
   agent.ts          Main orchestrator pipeline
   schemas.ts        Zod schemas for validated handoffs
   agents/           Subagent definitions
   tools/            Deterministic MCP tools
   lib/              Ranking, send-window, contacted-sheet dedup, logging, stage runner, and helpers
-  config/           Funding feeds, user profile, and email templates
+  config/           *.ts modules + editable *.data.json (profile, feeds, email templates)
 ```
 
 ## Design Guarantees

@@ -22,8 +22,11 @@ Each stage is a self-contained `query()` call with schema-validated JSON handoff
 - Step 6: `computeRanking()` — `rank = fitScore × expectedLearning` (code, not LLM).
 - Step 7: `computeSendWindow()` (best send time from HQ timezone) + `renderOutreach()` fills the fixed skill template (code, not LLM) → write `report.md` → send ONE Telegram message per company, sequentially, best-first, via `sendTelegramMessage()`.
 
-## Email templates (`src/config/emailTemplates.ts`)
-Three FIXED templates, one per skill track (Mobile / Web / GenAI), each with the SAME skeleton (subject `Interested in building with {company}` + greeting + observation sentence + projects paragraph + closing + signature). Only three text pieces differ per track — `focus`, `projects`, `closing` — held in the editable `EMAIL_TEMPLATES` config table. Each email is ~80% fixed and ~20% personalized: just the `founderGreeting` and a ≤120-char company `hook` (observation). The 120-char cap is enforced in code (`capObservation`). Rendering is deterministic (`renderOutreach`), so the fixed body never drifts or hallucinates. Framing is **skill-fit + existing project proof** — no new demo build is promised (a demo is cheap for a designer but slow for a developer).
+## Email templates (`src/config/emailTemplates.ts` + `emailTemplates.data.json`)
+One template per skill track (Mobile / Web / GenAI). Each is a full editable `subject` + `body` stored in `emailTemplates.data.json`, with `{tokens}` the renderer substitutes per startup: `{company_name}`, `{founder_greeting}`, `{personalization}`, `{signature}`. Each email is ~80% fixed (the template copy) and ~20% personalized: just the `founderGreeting` and a company `hook` (observation), capped in code (`capObservation` — ≤120 chars, ≤70 for GenAI). Rendering is deterministic token substitution (`renderOutreach`) with a code-generated metadata header, so the fixed body never drifts or hallucinates. Framing is **skill-fit + existing project proof** — no new demo build is promised.
+
+## Config UI (`npm run config`)
+`config-server.mjs` (dependency-free Node http server) serves `config-ui.html` at `localhost:4321` — a visual editor for the three `src/config/*.data.json` files (profile, feeds, email templates) and `.env` credentials. The editable DATA lives in `*.data.json`; the sibling `.ts` files import it and keep all derived exports (`PROFILE`, `SIGNATURE`, `FEEDS`, `EMAIL_TEMPLATES`, `renderOutreach`, …) unchanged. Saves write JSON via `JSON.parse/stringify` and rewrite `.env` line-by-line (comments preserved; keys can be renamed/added/removed; file created if missing). Changes are read at agent startup — restart `npm start` to apply.
 
 ## Tools (`src/tools/`)
 
@@ -53,9 +56,11 @@ One Telegram message per top-5 company: an 80%-fixed / 20%-personalized outreach
 - [x] Three fixed skill-track email templates (Mobile / Web / GenAI)
 - [x] Telegram send (`src/lib/telegram.ts`) — one message per company
 - [x] Google Sheets lead store (`src/lib/contactedSheet.ts`) — live cross-run dedup
+- [x] Config UI (`npm run config`) — visual editor for profile / feeds / templates / `.env`
 - [ ] Daily cron trigger
 
 ## Conventions
 - Heavy fetching in tools → return compact JSON.
 - Least-privilege tools per subagent.
+- Editable config data lives in `src/config/*.data.json`; the `.ts` files import it and expose derived strings. Edit via `npm run config`, not by hand.
 - `.env` holds `BOT_TOKEN`, `CHAT_ID`, `SHEETS_API_KEY`, `SHEET_ID`, AWS creds (gitignored).

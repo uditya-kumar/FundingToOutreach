@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Daily Scout — Config Editor</title>
+<style>
+  /* Vercel / Geist light theme */
+  :root {
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --panel-2: #fafafa;
+    --border: #eaeaea;
+    --border-strong: #d4d4d4;
+    --text: #000000;
+    --muted: #666666;
+    --faint: #888888;
+    --accent: #0070f3;
+    --success: #0070f3;
+    --danger: #e5484d;
+    --radius: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.03);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Geist", Inter, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 40px 40px 130px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+  .logo {
+    width: 38px; height: 38px; border-radius: 8px;
+    background: #000; color: #fff;
+    display: grid; place-items: center; font-size: 18px;
+  }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -.6px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 13px; margin: 3px 0 0; }
+
+  .tabs { display: flex; gap: 4px; margin: 28px 0 20px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+  .tab {
+    padding: 10px 14px; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    background: none; color: var(--muted); cursor: pointer; font-size: 14px; font-weight: 500;
+    transition: color .15s, border-color .15s; user-select: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: #000; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; box-shadow: var(--shadow); display: none;
+  }
+  .panel.active { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+  .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); font-weight: 600; margin: 4px 0 16px; }
+  .field { margin-bottom: 18px; }
+  label { display: block; font-size: 13px; color: var(--text); font-weight: 500; margin-bottom: 7px; }
+  label .hint { color: var(--faint); font-weight: 400; text-transform: none; letter-spacing: 0; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: var(--panel); border: 1px solid var(--border-strong); color: var(--text);
+    border-radius: 6px; padding: 9px 12px; font: inherit; outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  input::placeholder, textarea::placeholder { color: #a1a1a1; }
+  input:focus, textarea:focus, select:focus { border-color: #000; box-shadow: 0 0 0 3px rgba(0,0,0,.08); }
+  input:disabled, textarea:disabled { background: #fafafa; color: #a1a1a1; cursor: not-allowed; }
+  textarea { resize: vertical; min-height: 74px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 620px) { .row2 { grid-template-columns: 1fr; } }
+
+  /* list editor (arrays) */
+  .list-item { display: flex; gap: 8px; margin-bottom: 8px; }
+  .list-item input { flex: 1; }
+  .icon-btn {
+    border: 1px solid var(--border-strong); background: var(--panel); color: var(--muted);
+    border-radius: 6px; width: 38px; cursor: pointer; font-size: 15px; transition: .15s;
+  }
+  .icon-btn:hover { color: var(--danger); border-color: var(--danger); background: #fff5f5; }
+  .add-btn {
+    margin-top: 4px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text);
+    border-radius: 6px; padding: 8px 14px; cursor: pointer; font: 500 13px inherit; transition: .15s;
+  }
+  .add-btn:hover { border-color: #000; background: #fafafa; }
+
+  .kv { display: grid; grid-template-columns: 200px 1fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+  @media (max-width: 620px) { .kv { grid-template-columns: 1fr; } }
+
+  .track-card { border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 14px; background: var(--panel-2); }
+  .track-card h3 { margin: 0 0 14px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .chip { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px; background: #f2f2f2; color: var(--muted); border: 1px solid var(--border); text-transform: none; letter-spacing: 0; }
+
+  .note { font-size: 12.5px; color: var(--muted); background: #f7f7f7; border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; margin-bottom: 18px; }
+  .note b { color: var(--text); font-weight: 600; }
+  .note code { background: #ececec; border-radius: 4px; padding: 1px 5px; font-size: 12px; color: #000; }
+
+  /* editable-email cards, 2 per row */
+  .email-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .email-grid { grid-template-columns: 1fr; } }
+  .email-card {
+    background: #fff; border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden;
+    display: flex; flex-direction: column; box-shadow: var(--shadow);
+  }
+  .email-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: #fafafa; }
+  .email-head .track-name { font-weight: 600; font-size: 14px; }
+  .email-body-wrap { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .email-subject {
+    width: 100%; border: none; border-bottom: 1px solid var(--border); border-radius: 0;
+    padding: 4px 0 9px; font-weight: 600; font-size: 14px; color: #000; outline: none; background: none;
+  }
+  .email-subject:focus { border-bottom-color: #000; box-shadow: none; }
+  .email-subject-label { font-size: 11px; color: var(--faint); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .email-textarea {
+    width: 100%; border: none; outline: none; resize: vertical; min-height: 300px; background: none;
+    font-size: 13px; line-height: 1.62; color: #1a1a1a; padding: 2px 0; border-radius: 0;
+    font-family: inherit;
+  }
+  .email-textarea:focus { box-shadow: none; }
+  .token-legend { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .token-legend code { background: #eef4ff; color: #0060df; border-radius: 4px; padding: 1px 6px; font-size: 12px; margin-right: 4px; }
+
+  /* sticky save bar */
+  .savebar {
+    position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.85);
+    backdrop-filter: saturate(180%) blur(12px); border-top: 1px solid var(--border); padding: 14px 24px;
+  }
+  .savebar-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; gap: 14px; }
+  .save-btn {
+    background: #000; color: #fff; border: 1px solid #000;
+    border-radius: 6px; padding: 10px 22px; font: 500 14px inherit; cursor: pointer; transition: .15s;
+  }
+  .save-btn:hover { background: #383838; border-color: #383838; }
+  .save-btn:disabled { opacity: .45; cursor: default; }
+  .status { font-size: 13.5px; color: var(--muted); }
+  .status.ok { color: var(--success); }
+  .status.err { color: var(--danger); }
+  .ghost-btn { background: var(--panel); border: 1px solid var(--border-strong); color: var(--text); border-radius: 6px; padding: 10px 16px; cursor: pointer; font: 500 14px inherit; transition: .15s; }
+  .ghost-btn:hover { border-color: #000; background: #fafafa; }
+  .spacer { flex: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🛰️</div>
+    <div>
+      <h1>Daily Startup Scout — Config</h1>
+      <p class="sub">Edit your profile, funding feeds, email copy, and credentials. Saves straight to disk.</p>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-tab="profile">Profile</div>
+    <div class="tab" data-tab="feeds">Funding Feeds</div>
+    <div class="tab" data-tab="templates">Email Templates</div>
+    <div class="tab" data-tab="env">Credentials</div>
+  </div>
+
+  <!-- PROFILE -->
+  <section class="panel active" id="panel-profile">
+    <div class="section-title">Who we're scouting for</div>
+    <div class="row2">
+      <div class="field"><label>Full name</label><input type="text" id="p-name" /></div>
+      <div class="field"><label>Timezone <span class="hint">(IANA, e.g. Asia/Kolkata)</span></label><input type="text" id="p-timezone" /></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Timezone label <span class="hint">(e.g. IST)</span></label><input type="text" id="p-timezoneLabel" /></div>
+      <div class="field"></div>
+    </div>
+    <div class="field"><label>Summary</label><textarea id="p-summary"></textarea></div>
+    <div class="row2">
+      <div class="field"><label>GitHub</label><input type="text" id="p-github" /></div>
+      <div class="field"><label>LinkedIn</label><input type="text" id="p-linkedin" /></div>
+    </div>
+    <div class="field"><label>Evidence <span class="hint">— proof points used in fit scoring</span></label><div id="list-evidence"></div></div>
+    <div class="field"><label>Target roles</label><div id="list-targetRoles"></div></div>
+    <div class="field"><label>Edge sectors <span class="hint">— where you have an advantage</span></label><div id="list-edgeSectors"></div></div>
+    <div class="field"><label>Avoid sectors <span class="hint">— filtered out early</span></label><div id="list-avoidSectors"></div></div>
+  </section>
+
+  <!-- FEEDS -->
+  <section class="panel" id="panel-feeds">
+    <div class="section-title">RSS funding sources</div>
+    <div class="note">Name → feed URL. These are swept in Step 1. Removing one stops it being scanned.</div>
+    <div id="feeds-list"></div>
+    <button class="add-btn" id="add-feed">+ Add feed</button>
+  </section>
+
+  <!-- TEMPLATES -->
+  <section class="panel" id="panel-templates">
+    <div class="section-title">Email templates</div>
+    <div class="note">Edit each email directly — subject and body. Keep the tokens in place; they're filled per company when the email is sent:
+      <code>{company_name}</code> <code>{founder_greeting}</code> <code>{personalization}</code> <code>{signature}</code>.
+      A metadata header (rank · funding · fit score · send time) is added automatically above each email.</div>
+    <div class="token-legend">
+      <code>{company_name}</code> the startup ·
+      <code>{founder_greeting}</code> founder name or "there" ·
+      <code>{personalization}</code> the ≤120-char hook (≤70 for GenAI) ·
+      <code>{signature}</code> your sign-off
+    </div>
+    <div class="email-grid" id="templates-list"></div>
+  </section>
+
+  <!-- ENV -->
+  <section class="panel" id="panel-env">
+    <div class="section-title">Credentials (.env)</div>
+    <div class="note">Each row is a <b>KEY = value</b> pair from <b>.env</b>. Edit either side, click <b>✕</b> to remove a pair, or <b>+ Add variable</b> for a new one. Comments and commented-out provider options in <b>.env</b> are preserved.</div>
+    <div class="kv" style="margin-bottom:10px"><label style="margin:0">Key</label><label style="margin:0">Value</label><span></span></div>
+    <div id="env-list"></div>
+    <button class="add-btn" id="add-env">+ Add variable</button>
+  </section>
+</div>
+
+<div class="savebar">
+  <div class="savebar-inner">
+    <button class="save-btn" id="save">Save all changes</button>
+    <button class="ghost-btn" id="reload">Reload</button>
+    <span class="status" id="status">Loading…</span>
+    <span class="spacer"></span>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let DATA = null;
+
+function setStatus(msg, kind = "") { const s = $("status"); s.textContent = msg; s.className = "status " + kind; }
+
+// ── generic string-list editor ─────────────────────────────────────────────
+function renderList(containerId, items) {
+  const c = $(containerId); c.innerHTML = "";
+  const add = (val) => {
+    const row = document.createElement("div"); row.className = "list-item";
+    const inp = document.createElement("input"); inp.type = "text"; inp.value = val ?? "";
+    const del = document.createElement("button"); del.className = "icon-btn"; del.textContent = "✕"; del.title = "Remove";
+    del.onclick = () => row.remove();
+    row.append(inp, del); c.appendChild(row);
+  };
+  (items || []).forEach(add);
+  const btn = document.createElement("button"); btn.className = "add-btn"; btn.textContent = "+ Add";
+  btn.onclick = () => { add(""); c.querySelector(".list-item:last-of-type input")?.focus(); };
+  c.appendChild(btn);
+}
+function readList(containerId) {
+  return [...$(containerId).querySelectorAll(".list-item input")]
+    .map((i) => i.value.trim()).filter(Boolean);
+}
+
+// ── feeds (key→url) editor ──────────────────────────────────────────────────
+function addFeedRow(name = "", url = "") {
+  const row = document.createElement("div"); row.className = "kv";
+  const n = document.createElement("input"); n.type = "text"; n.placeholder = "Name"; n.value = name;
+  const u = document.createElement("input"); u.type = "text"; u.placeholder = "https://…/feed"; u.value = url;
+  const del = document.createElement("button"); del.className = "icon-btn"; del.textContent = "✕";
+  del.onclick = () => row.remove();
+  row.append(n, u, del); $("feeds-list").appendChild(row);
+}
+
+// ── templates editor — each track is an editable email (subject + body) ──────
+// Laid out 2 per row. Body/subject hold literal {tokens} the user keeps in place.
+function renderTemplates(templates) {
+  const c = $("templates-list"); c.innerHTML = "";
+  for (const track of ["GenAI", "Mobile", "Web"]) {
+    const t = templates[track] || { subject: "", body: "" };
+    const card = document.createElement("div"); card.className = "email-card"; card.dataset.track = track;
+    const head = document.createElement("div"); head.className = "email-head";
+    head.innerHTML = `<span class="track-name">${track}</span><span class="chip">skill track</span>`;
+    const wrap = document.createElement("div"); wrap.className = "email-body-wrap";
+    const subLabel = document.createElement("div"); subLabel.className = "email-subject-label"; subLabel.textContent = "Subject";
+    const sub = document.createElement("input"); sub.type = "text"; sub.className = "email-subject"; sub.dataset.k = "subject"; sub.value = t.subject || "";
+    const body = document.createElement("textarea"); body.className = "email-textarea"; body.dataset.k = "body"; body.value = t.body || "";
+    wrap.append(subLabel, sub, body);
+    card.append(head, wrap);
+    c.appendChild(card);
+  }
+}
+function esc(s) { return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+function readTemplates() {
+  const out = {};
+  for (const card of $("templates-list").querySelectorAll(".email-card")) {
+    const track = card.dataset.track;
+    const sub = card.querySelector('[data-k="subject"]');
+    const body = card.querySelector('[data-k="body"]');
+    out[track] = { subject: sub.value.trim(), body: body.value.replace(/\s+$/, "") };
+  }
+  return out;
+}
+
+// ── env editor — generic editable KEY=value rows ────────────────────────────
+function addEnvRow(key = "", value = "") {
+  const row = document.createElement("div"); row.className = "kv env-row";
+  const k = document.createElement("input"); k.type = "text"; k.className = "env-key"; k.placeholder = "KEY"; k.value = key;
+  const v = document.createElement("input"); v.type = "text"; v.className = "env-val"; v.placeholder = "value"; v.value = value;
+  const del = document.createElement("button"); del.className = "icon-btn"; del.textContent = "✕"; del.title = "Remove";
+  del.onclick = () => row.remove();
+  row.append(k, v, del); $("env-list").appendChild(row);
+}
+function renderEnv(pairs) {
+  $("env-list").innerHTML = "";
+  const list = pairs || [];
+  if (list.length === 0) addEnvRow(); // .env empty or missing — offer one blank row to start
+  else list.forEach((p) => addEnvRow(p.key, p.value));
+}
+// Full desired pair list (order preserved). Skips fully-empty rows.
+function readEnv() {
+  const out = [];
+  for (const row of $("env-list").querySelectorAll(".env-row")) {
+    const key = row.querySelector(".env-key").value.trim();
+    const value = row.querySelector(".env-val").value;
+    if (key) out.push({ key, value: value.trim() });
+  }
+  return out;
+}
+
+// ── load / save ─────────────────────────────────────────────────────────────
+async function load() {
+  setStatus("Loading…");
+  const res = await fetch("/api/config");
+  if (!res.ok) return setStatus("Failed to load config", "err");
+  DATA = await res.json();
+  const p = DATA.profile;
+  $("p-name").value = p.name || "";
+  $("p-summary").value = p.summary || "";
+  $("p-timezone").value = p.timezone || "";
+  $("p-timezoneLabel").value = p.timezoneLabel || "";
+  $("p-github").value = p.links?.github || "";
+  $("p-linkedin").value = p.links?.linkedin || "";
+  renderList("list-evidence", p.evidence);
+  renderList("list-targetRoles", p.targetRoles);
+  renderList("list-edgeSectors", p.edgeSectors);
+  renderList("list-avoidSectors", p.avoidSectors);
+
+  $("feeds-list").innerHTML = "";
+  Object.entries(DATA.feeds || {}).forEach(([n, u]) => addFeedRow(n, u));
+
+  renderTemplates(DATA.templates || {});
+  renderEnv(DATA.env || []);
+  setStatus("Loaded. Ready to edit.", "ok");
+}
+
+function collect() {
+  const profile = {
+    name: $("p-name").value.trim(),
+    summary: $("p-summary").value.trim(),
+    evidence: readList("list-evidence"),
+    targetRoles: readList("list-targetRoles"),
+    edgeSectors: readList("list-edgeSectors"),
+    avoidSectors: readList("list-avoidSectors"),
+    links: { github: $("p-github").value.trim(), linkedin: $("p-linkedin").value.trim() },
+    timezone: $("p-timezone").value.trim(),
+    timezoneLabel: $("p-timezoneLabel").value.trim(),
+  };
+  const feeds = {};
+  for (const row of $("feeds-list").querySelectorAll(".kv")) {
+    const [n, u] = row.querySelectorAll("input");
+    if (n.value.trim() && u.value.trim()) feeds[n.value.trim()] = u.value.trim();
+  }
+  return { profile, feeds, templates: readTemplates(), env: readEnv() };
+}
+
+async function save() {
+  const btn = $("save"); btn.disabled = true; setStatus("Saving…");
+  try {
+    const body = collect();
+    if (!body.profile.name) { setStatus("Name can't be empty.", "err"); btn.disabled = false; return; }
+    if (Object.keys(body.feeds).length === 0) { setStatus("Add at least one feed.", "err"); btn.disabled = false; return; }
+    // Guard the required tokens — deleting one would silently break outreach.
+    const REQUIRED = ["{company_name}", "{founder_greeting}", "{personalization}", "{signature}"];
+    for (const [track, t] of Object.entries(body.templates)) {
+      const missing = REQUIRED.filter((tok) => !(t.subject + " " + t.body).includes(tok));
+      if (missing.length) {
+        document.querySelector('.tab[data-tab="templates"]').click();
+        setStatus(`${track} email is missing required token(s): ${missing.join(", ")}`, "err");
+        btn.disabled = false; return;
+      }
+    }
+    const res = await fetch("/api/config", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    const j = await res.json();
+    if (res.ok && j.ok) { setStatus("✓ Saved to disk. Restart the agent to use new values.", "ok"); DATA.templates = body.templates; }
+    else setStatus("Save failed: " + (j.error || res.status), "err");
+  } catch (e) {
+    setStatus("Save failed: " + e.message, "err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// tabs
+$("tabs").addEventListener("click", (e) => {
+  const tab = e.target.closest(".tab"); if (!tab) return;
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
+  document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + tab.dataset.tab));
+});
+$("add-feed").onclick = () => addFeedRow();
+$("add-env").onclick = () => { addEnvRow(); $("env-list").querySelector(".env-row:last-of-type .env-key")?.focus(); };
+$("save").onclick = save;
+$("reload").onclick = load;
+load();
+</script>
+</body>
+</html>

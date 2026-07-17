@@ -1,0 +1,14 @@
+{
+  "GenAI": {
+    "subject": "Interested in building with {company_name}",
+    "body": "Hi {founder_greeting},\n\n{personalization} caught my attention; it closely aligns with the reliable AI systems I've been building.\n\nI built a Mutual Funds Research Agent using the Claude Agent SDK and specialized MCP tools for structured analysis. I also built a ConfirmTkt MCP Server for live railway search and seat availability by reverse-engineering a public API.\n\nI work across external integrations, MCP tooling, agent workflows, and the product layer around them.\n\nI'd love to bring that experience to the team at {company_name}. Looking forward to hearing from you.\n\n{signature}"
+  },
+  "Mobile": {
+    "subject": "Interested in building with {company_name}",
+    "body": "Hi {founder_greeting},\n\n{personalization} caught my attention because my recent work has focused on building mobile products with React Native, real-time features, and end-to-end product ownership.\n\nI built a Campus Ride App that lets students create rides, join trips, and coordinate through real-time group chat using Expo, React Native, TypeScript, and PostgreSQL. I also built a Teacher Management App for teacher discovery, ratings, and student feedback.\n\nI build across mobile interfaces, real-time interactions, backend integrations, and the product layer around them. I'd love to bring that experience to the team at {company_name}. Looking forward to hearing from you.\n\n{signature}"
+  },
+  "Web": {
+    "subject": "Interested in building with {company_name}",
+    "body": "Hi {founder_greeting},\n\n{personalization} caught my attention because my recent work has focused on building full-stack web products, business workflows, and user-facing applications.\n\nI built Smooth Supply Hub, a full-stack B2B e-commerce platform for housekeeping supplies with product management, ordering workflows, and business-focused procurement capabilities using React, TypeScript, PostgreSQL, Vite, and Tailwind CSS.\n\nI build across frontend interfaces, backend workflows, database-backed products, and the full product layer around them. I'd love to bring that experience to the team at {company_name}. Looking forward to hearing from you.\n\n{signature}"
+  }
+}
