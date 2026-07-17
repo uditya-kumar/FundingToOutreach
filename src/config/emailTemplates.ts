@@ -18,6 +18,10 @@ export const SKILLS: readonly Skill[] = ["Mobile", "Web", "GenAI"] as const;
 // Hard ceiling on the personalized observation clause, enforced in code.
 export const OBSERVATION_MAX_CHARS = 120;
 
+// The GenAI track uses a tighter, hardcoded AI-role skeleton (see renderOutreach)
+// whose observation slot is capped shorter than the shared Mobile/Web skeleton.
+export const GENAI_OBSERVATION_MAX_CHARS = 70;
+
 // ── EDIT COPY HERE ─────────────────────────────────────────────────────────
 // One entry per track. Placeholders are filled by the renderer:
 //   {{company}} → the startup name.
@@ -25,6 +29,9 @@ export const OBSERVATION_MAX_CHARS = 120;
 // `projects` → the 1-2 sentence proof paragraph (existing work, no new demo promised).
 // `closing`  → completes "I build across {closing}."
 export const EMAIL_TEMPLATES: Record<Skill, { focus: string; projects: string; closing: string }> = {
+  // NOTE: GenAI now renders a fully hardcoded AI-role email (see renderGenAI);
+  // this entry is no longer read at render time — kept only to satisfy the
+  // per-track Record type. Edit the GenAI copy in renderGenAI, not here.
   GenAI: {
     focus: "AI agents, MCP tooling, and the product systems around them",
     projects:
@@ -68,10 +75,10 @@ export type OutreachContext = {
 // Cap the personalized observation at OBSERVATION_MAX_CHARS. Trims whitespace and
 // any trailing period (it flows into "<obs> caught my attention because…"), then
 // truncates at a word boundary if the clause is over the limit.
-function capObservation(raw: string): string {
+function capObservation(raw: string, max: number = OBSERVATION_MAX_CHARS): string {
   const clean = raw.trim().replace(/\.+$/, "").trim();
-  if (clean.length <= OBSERVATION_MAX_CHARS) return clean;
-  const cut = clean.slice(0, OBSERVATION_MAX_CHARS);
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
   const lastSpace = cut.lastIndexOf(" ");
   return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trim();
 }
@@ -87,9 +94,42 @@ function header(p: OutreachPersonalization, ctx: OutreachContext): string {
 ---`;
 }
 
+// The signature block — shared by every track. Name, links, phone on their own
+// lines (matches the AI-role email format).
+function signature(): string {
+  return `Best,
+${profile.name}
+GitHub: ${profile.links.github}
+LinkedIn: ${profile.links.linkedin}`;
+}
+
+// GenAI track — a FIXED, hardcoded AI-role email. Everything outside the two
+// placeholders ({{name}} greeting, {{personalization}} hook) is verbatim copy;
+// the observation slot is capped at GENAI_OBSERVATION_MAX_CHARS (~70 chars).
+function renderGenAI(p: OutreachPersonalization, ctx: OutreachContext): string {
+  const observation = capObservation(p.hook, GENAI_OBSERVATION_MAX_CHARS);
+  return `${header(p, ctx)}
+
+**Subject:** Interested in building with ${ctx.startupName}
+
+Hi ${p.founderGreeting},
+
+${observation} caught my attention; it closely aligns with the reliable AI systems I've been building.
+
+I built a Mutual Funds Research Agent using the Claude Agent SDK and specialized MCP tools for structured analysis. I also built a ConfirmTkt MCP Server for live railway search and seat availability by reverse-engineering a public API.
+
+I work across external integrations, MCP tooling, agent workflows, and the product layer around them.
+
+I'd love to bring that experience to the team at ${ctx.startupName}. Looking forward to hearing from you.
+
+${signature()}`;
+}
+
 // Render ONE Telegram-ready outreach message from the track's template copy.
-// The skeleton is identical across tracks; only EMAIL_TEMPLATES[category] varies.
+// GenAI uses its own hardcoded AI-role skeleton (renderGenAI); Mobile/Web share
+// the skeleton below, where only EMAIL_TEMPLATES[category] varies.
 export function renderOutreach(p: OutreachPersonalization, ctx: OutreachContext): string {
+  if (p.category === "GenAI") return renderGenAI(p, ctx);
   const t = EMAIL_TEMPLATES[p.category];
   const observation = capObservation(p.hook);
   return `${header(p, ctx)}
@@ -104,7 +144,5 @@ ${t.projects}
 
 I build across ${t.closing}. I'd love to bring that experience to the team at ${ctx.startupName}. Looking forward to hearing from you.
 
-Best,
-${profile.name}
-GitHub: ${profile.links.github} · LinkedIn: ${profile.links.linkedin}`;
+${signature()}`;
 }
