@@ -99,7 +99,9 @@ function header(p: OutreachPersonalization, ctx: OutreachContext): string {
 function signature(): string {
   return `Best,
 ${profile.name}
+
 GitHub: ${profile.links.github}
+
 LinkedIn: ${profile.links.linkedin}`;
 }
 
