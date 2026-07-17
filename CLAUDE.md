@@ -18,6 +18,7 @@ Each stage is a self-contained `query()` call with schema-validated JSON handoff
 | `outreach-designer` | 5 | Exa, WebFetch | `Outreach` (one instance per top-5 startup, parallel) — categorizes into Mobile/Web/GenAI, returns the ~20% personalized slots + the company's HQ location/timezone |
 
 **Orchestrator-only steps:**
+- Step 4.5: `fetchContactedIndex()` (`src/lib/contactedSheet.ts`) — reads the Google Sheet of already-contacted companies LIVE each run (Sheets REST API + API key, no library) and drops any scored startup already in it (matched by name OR root domain) BEFORE the top-5 slice, so the top 5 are always the highest-fit companies not yet contacted. Filters before slicing so the top-5 stays full when the leader is already contacted. Sheet failure degrades to "contact everyone" (never throws).
 - Step 6: `computeRanking()` — `rank = fitScore × expectedLearning` (code, not LLM).
 - Step 7: `computeSendWindow()` (best send time from HQ timezone) + `renderOutreach()` fills the fixed skill template (code, not LLM) → write `report.md` → send ONE Telegram message per company, sequentially, best-first, via `sendTelegramMessage()`.
 
@@ -41,6 +42,7 @@ Three FIXED templates, one per skill track (Mobile / Web / GenAI), each with the
 5. **Fixed body in code** — the 80% email body is filled by `renderOutreach`, not an LLM, so it can't drift; the agent only supplies personalized slots.
 6. **Write-then-send** — combined `report.md` written before any Telegram send; artifact survives transport failure. One company per message, sent sequentially; a single send failure does not stop the rest.
 7. **Robustness** — `maxTurns` on every subagent, `.filter(Boolean)` on parallel results, graceful Exa degradation.
+8. **Cross-run dedup** — already-contacted companies (tracked in a Google Sheet, read live each run) are excluded before top-5 selection; a Sheets outage degrades to "contact everyone" rather than sinking the run.
 
 ## Output
 One Telegram message per top-5 company: an 80%-fixed / 20%-personalized outreach email chosen by skill track, prefixed with a metadata header (rank · funding · fit score · best send time). All messages written to `report.md` (joined by `---`), then sent one at a time, best-first.
@@ -50,10 +52,10 @@ One Telegram message per top-5 company: an 80%-fixed / 20%-personalized outreach
 - [x] Orchestrator + 3 subagents with schemas
 - [x] Three fixed skill-track email templates (Mobile / Web / GenAI)
 - [x] Telegram send (`src/lib/telegram.ts`) — one message per company
+- [x] Google Sheets lead store (`src/lib/contactedSheet.ts`) — live cross-run dedup
 - [ ] Daily cron trigger
-- [ ] SQL lead store (cross-run dedup)
 
 ## Conventions
 - Heavy fetching in tools → return compact JSON.
 - Least-privilege tools per subagent.
-- `.env` holds `BOT_TOKEN`, `CHAT_ID`, AWS creds (gitignored).
+- `.env` holds `BOT_TOKEN`, `CHAT_ID`, `SHEETS_API_KEY`, `SHEET_ID`, AWS creds (gitignored).

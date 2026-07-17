@@ -19,6 +19,7 @@ chosen by skill track (Mobile / Web / GenAI), and timed to the company's HQ time
 | Deep Enrichment            | Gathers founders, links, team info, and relevant public signals  |
 | Fit Scoring                | Scores each opportunity using structured fit and learning criteria |
 | Skill-Track Categorization | Sorts each top company into Mobile / Web / GenAI to pick the right email template |
+| Cross-Run Dedup            | Reads a Google Sheet of already-contacted companies live each run and excludes them before top-5 selection |
 | Personalized Outreach      | Fills a fixed 80%-template with ~20% per-company personalization (greeting + ≤120-char hook) |
 | Best-Send-Time             | Recommends when to send so the email lands ~9 AM in the company's HQ timezone |
 | Deterministic Ranking      | Ranks opportunities using reproducible scoring logic in code     |
@@ -31,7 +32,8 @@ chosen by skill track (Mobile / Web / GenAI), and timed to the company's HQ time
 flowchart LR
     A[Funding Sources] --> B[funding-researcher]
     B --> C[fit-strategist]
-    C --> D["outreach-designer (×5 parallel)"]
+    C --> S{"Drop already-contacted (Google Sheet)"}
+    S --> D["outreach-designer (×5 parallel)"]
     D --> E[Rank & Score]
     E --> F["renderOutreach (code)"]
     F --> G[report.md]
@@ -115,6 +117,29 @@ Two files to edit:
 Each skill track (Mobile / Web / GenAI) sets its own `focus`, `projects`, and `closing` text.
 Everything else is a shared fixed skeleton, so edits stay in this one table.
 
+### Contacted-Companies Sheet (cross-run dedup)
+
+The agent reads a Google Sheet of companies you've already reached out to and skips them
+before picking the top 5, so you never re-contact the same startup. The sheet is read
+**live on every run** via the Google Sheets REST API (read-only, no dependency, free tier).
+
+**Sheet layout:** column **A** = Company Name, column **B** = Website (row 1 is a header).
+A startup is excluded if **either** its name **or** its root domain matches a row.
+
+**Setup:**
+
+1. In Google Cloud, enable the **Google Sheets API** and create an **API key**
+   (restrict it to the Sheets API). No billing account is needed — reads are free.
+2. Share the sheet as **"Anyone with the link → Viewer"**.
+3. Add to `.env`:
+   ```
+   SHEETS_API_KEY=your_key_here
+   SHEET_ID=your_sheet_id_here   # the ID in docs.google.com/spreadsheets/d/<SHEET_ID>/edit
+   ```
+
+If these are unset or the fetch fails, dedup is skipped gracefully (the run contacts
+everyone) rather than erroring.
+
 ## Supported Providers
 
 | Provider           | Required Environment Variables                                                                               |
@@ -138,7 +163,7 @@ src/
   schemas.ts        Zod schemas for validated handoffs
   agents/           Subagent definitions
   tools/            Deterministic MCP tools
-  lib/              Ranking, send-window, logging, stage runner, and helpers
+  lib/              Ranking, send-window, contacted-sheet dedup, logging, stage runner, and helpers
   config/           Funding feeds, user profile, and email templates
 ```
 
@@ -147,6 +172,7 @@ src/
 * **Schema-validated handoffs:** All inter-agent communication uses typed JSON objects.
 * **Deterministic ranking:** Opportunity ranking is computed in code, not by the model.
 * **No fabricated data:** Founder greeting falls back to "there" and HQ location/timezone to "not_found" unless grounded in a real source — names and locations are never invented.
+* **Cross-run dedup:** Companies already in the contacted Google Sheet are excluded before top-5 selection; a Sheets outage degrades to "contact everyone" rather than failing the run.
 * **Report persistence:** `report.md` is written before any external send attempt.
 * **Graceful degradation:** Enrichment failures do not block the full report.
 * **Bounded execution:** Each subagent has a `maxTurns` limit to prevent runaway loops.
@@ -174,8 +200,8 @@ report.md
 - [x] Orchestrator pipeline
 - [x] Structured subagent outputs
 - [x] Telegram delivery
+- [x] Google Sheets lead store for live cross-run deduplication
 - [ ] Daily scheduled trigger
-- [ ] SQL lead store for cross-run deduplication
 - [ ] Historical opportunity tracking
 - [ ] Retry queues for failed enrichment stages
 - [x] Configurable outreach templates (Mobile / Web / GenAI)

@@ -7,6 +7,7 @@ import {
 import { mcpServers } from "@/tools";
 import { runStage } from "@/lib/stage";
 import { computeRanking } from "@/lib/ranking";
+import { fetchContactedIndex } from "@/lib/contactedSheet";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { log } from "@/lib/logger";
 import { CandidateList, ScoredStartup, Outreach } from "@/schemas";
@@ -96,13 +97,33 @@ async function main() {
     return;
   }
 
+  // ── Step 4.5: drop already-contacted companies (live Google Sheet) ────────
+  // Fetch the contacted-companies sheet fresh and exclude any scored startup
+  // already in it (matched by name OR root domain), BEFORE the top-5 slice — so
+  // we always pick the 5 highest-fit companies we have NOT yet reached out to.
+  // Filtering here (not after slicing) keeps the top-5 full when the leader is
+  // already contacted. Sheet failure degrades to "contact everyone" (Rule 6/7).
+  const contacted = await fetchContactedIndex();
+  const fresh = contacted.count
+    ? startups.filter((s) => !contacted.has(s.name, s.url))
+    : startups;
+  const excluded = startups.length - fresh.length;
+  log.info(
+    "pipeline",
+    `Step 4.5: ${fresh.length}/${startups.length} startups are new (${excluded} already in sheet)`,
+  );
+  if (fresh.length === 0) {
+    await writeNoTargets("all scored startups today are already in your contacted-companies sheet");
+    return;
+  }
+
   // ── Step 5: top-5 outreach, ONE startup per agent, HARDCODED PARALLEL ─────
   // Gate on the SAME signal as the final rank (fitScore × expectedLearning) so
   // the gate can never drop a lead the Step-6 rank would have promoted. Each
   // agent categorizes its startup (Mobile/Web/GenAI) and returns ONLY the
   // personalized slots — the fixed email body is filled by code (renderOutreach).
   const preScore = (s: Scored) => s.fitScore * s.expectedLearning;
-  const top5 = [...startups].sort((a, b) => preScore(b) - preScore(a)).slice(0, 5);
+  const top5 = [...fresh].sort((a, b) => preScore(b) - preScore(a)).slice(0, 5);
   log.info("pipeline", `Step 5: outreach for top ${top5.length} (parallel)`);
 
   const outreachResults = await Promise.all(
